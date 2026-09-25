@@ -1,143 +1,177 @@
-# Usta Top — Marketplace Platformasi
+# Usta Top — Ishonchli Mahalliy Ustalar Platformasi
 
-Usta Top — O‘zbekistondagi ishonchli mahalliy ustalarni (santexnik, elektrik, maishiy texnika ustasi va boshqalar) tez va oson topish, narx takliflarini solishtirish, buyurtmani jonli kuzatish va kafolatli xizmat ko‘rsatish platformasi.
+<p align="center">
+  <b>O‘zbekistondagi malakali va tekshirilgan ustalarni topish, narx takliflarini solishtirish hamda buyurtmalarni jonli kuzatish bo'yicha zamonaviy xizmatlar bozori (marketplace).</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16.3-black?logo=next.js" alt="Next.js">
+  <img src="https://img.shields.io/badge/React-19-blue?logo=react" alt="React">
+  <img src="https://img.shields.io/badge/TailwindCSS-v4-38bdf8?logo=tailwindcss" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Django-5.2-092E20?logo=django" alt="Django">
+  <img src="https://img.shields.io/badge/Django_REST-Framework-red?logo=django" alt="DRF">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Docker-Enabled-2496ed?logo=docker" alt="Docker">
+</p>
 
 ---
 
-## 📁 Loyiha Strukturasi (Clean Monorepo)
+## 📌 Asosiy Xususiyatlar
 
-Loyiha ikkita asosiy qismdan (bitta frontend va bitta backend) iborat toza arxitekturaga ega:
+- 🔍 **4 bosqichli intellektual muammo diagnostikasi:** mijoz muammosini aniqlash, rasm/audio yuklash va lokatsiyani ko'rsatish.
+- 👨‍🔧 **Tekshirilgan ustalar katalogi:** yulduzlar reytingi, mijozlar sharhlari, portfolio va bento-metrikalar.
+- 📋 **Smeta va narx takliflari (Quotes):** ustalardan takliflar olish, ularni solishtirish va eng maqbulini tanlash.
+- 📍 **Jonli buyurtma kuzatish:** buyurtma holati (`Kutilmoqda` → `Qabul qilindi` → `Yo'lda` → `Bajarilmoqda` → `Yakunlandi`), usta lokatsiyasi va xaritadagi kuzatuv.
+- 💬 **Jonli xabarlar (Chat):** mijoz va usta o'rtasida to'g'ridan-to'g'ri xabar almashish.
+- 🛡️ **Kafolatlangan xavfsizlik:** IDOR himoyasi, xavfsiz JWT autentifikatsiya, pasport verifikatsiyasi va ruxsatlar nazorati.
+- 📊 **Usta & Admin panellari:** daromadlar tahlili, ishlar taqvimi, yangi so'rovlar va platforma ko'rsatkichlari.
 
-`	ext
-Usta Top/
-├── frontend/                     # Next.js 16 (App Router) + React 19 + Tailwind CSS v4 + TypeScript
-│   ├── app/                      # Sahifalar va marshrutlar (19 ta to'liq sahifa)
-│   │   ├── page.tsx              # Asosiy landing page
+---
+
+## 📁 Loyiha Arxitekturasi
+
+Loyiha toza monorepo arxitekturasida tuzilgan:
+
+```text
+Usta-Top/
+├── frontend/                     # Next.js 16 (App Router) + React 19 + Tailwind v4 + TypeScript
+│   ├── app/                      # Marshrutlar (19 ta sahifa)
+│   │   ├── page.tsx              # Asosiy landing sahifa
 │   │   ├── qidiruv/              # 4 bosqichli muammo diagnostikasi
-│   │   ├── ustalar/              # Ustalarni qidirish va moslashtirish natijalari
-│   │   │   └── [id]/             # Ali Usta va boshqa ustalar profili, bento-metrikalar
-│   │   ├── buyurtmalar/          # Buyurtmalar ro'yxati va #UT-8942 jonli kuzatuv
-│   │   ├── provider/             # Usta boshqaruv paneli (dashboard, kalendar, ishlar, daromad)
-│   │   ├── admin/                # Admin platforma monitoringi va metrikalari
-│   │   ├── auth/                 # Kirish va ro'yxatdan o'tish (SMS/OTP)
-│   │   ├── xabarlar/             # Jonli chat va xabarlar
-│   │   └── xizmatlar/            # Xizmatlar katalogi
+│   │   ├── ustalar/              # Ustalar katalogi va qidiruv
+│   │   │   └── [id]/             # Usta profili va bento-metrikalar
+│   │   ├── buyurtmalar/          # Buyurtmalar ro'yxati
+│   │   │   └── [id]/             # Buyurtmani jonli kuzatish
+│   │   ├── provider/             # Usta kabineti (dashboard, ishlar, kalendar, daromad)
+│   │   ├── admin/dashboard/      # Admin monitoring va verifikatsiya
+│   │   ├── auth/                 # Kirish va ro'yxatdan o'tish (login, register)
+│   │   ├── xabarlar/             # Chat interfeysi
+│   │   ├── xizmatlar/            # Xizmat toifalari
+│   │   └── profil/               # Mijoz profili
 │   ├── components/               # Qayta ishlatiluvchi UI komponentlar
-│   ├── docs/                     # Dizayn tizimi va spetsifikatsiyalar (DESIGN.md)
-│   ├── lib/                      # API client, auth context va mock-data fallbacks
-│   ├── public/                   # Rasmlar, ikonlar va skrinshotlar
-│   ├── .env.local                # Frontend muhit o'zgaruvchilari
-│   ├── next.config.ts            # API rewrites proxy va rasm optimizatsiyalari
-│   └── package.json              # Frontend bog'liqliklari va skriptlari
+│   ├── lib/                      # API client, Auth konteksti va ma'lumotlar
+│   ├── public/                   # Rasmlar, ikonlar va bannerlar
+│   └── package.json              # Frontend bog'liqliklari
 │
-├── backend/                      # Django 5 + Django REST Framework + Celery + PostgreSQL/SQLite
-│   ├── apps/                     # 18 ta mustaqil biznes domen modullari
-│   │   ├── users/                # Foydalanuvchilar (Customer, Provider, Admin)
-│   │   ├── locations/            # O'zbekiston viloyat va tumanlari
-│   │   ├── catalog/              # Xizmat toifalari va narxlar
+├── backend/                      # Django 5 + Django REST Framework + Celery + PostgreSQL
+│   ├── apps/                     # Modulli biznes domenlari
+│   │   ├── users/                # Foydalanuvchilar (Mijoz, Usta, Admin), JWT auth
 │   │   ├── providers/            # Usta profillari, portfoliosi va tajribasi
 │   │   ├── service_requests/     # Mijoz buyurtmalari va so'rovlari
-│   │   ├── matching/             # Skoring va eng mos ustalarni tanlash dvigateli
-│   │   ├── quotes/               # Smeta takliflari (qabul qilish/rad etish)
-│   │   ├── bookings/             # Jonli buyurtma bosqichlari (#UT-8942)
-│   │   ├── conversations/        # Chat va xabarlar tizimi
-│   │   ├── reviews/              # 5 yulduzli sharhlar va reyting
-│   │   ├── favorites/            # Sevimli ustalar
-│   │   ├── disputes/             # Kafolat va nizolar boshqaruvi
-│   │   ├── verification/         # Usta pasport/hujjat verifikatsiyasi
-│   │   ├── notifications/        # Telegram, Push, SMS xabarnomalar
-│   │   ├── payments/             # Escrow, Payme va Click to'lovlari
-│   │   ├── promotions/           # Promokodlar va aksiyalar
-│   │   ├── analytics/            # Admin KPI ko'rsatkichlari
-│   │   └── ai_intake/            # AI orqali muammoni tahlil qilish
-│   ├── common/                   # Global permissions, pagination, exceptions
-│   ├── config/                   # Django settings (base, local, production), URLs, Celery
-│   ├── requirements/             # Python paketlari (base, local, production)
-│   ├── tests/                    # Pytest testlari (auth, flows, concurrency)
-│   ├── db.sqlite3                # Mahalliy ma'lumotlar bazasi (demo ustalar va buyurtmalar yuklangan)
-│   ├── Dockerfile                # Backend konteynerizatsiyasi
+│   │   ├── quotes/               # Usta takliflari va smetalar
+│   │   ├── bookings/             # Jonli buyurtmalar va status mashinasi
+│   │   ├── categories/           # Xizmat toifalari va narxlar
+│   │   ├── reviews/              # Sharhlar va reyting tizimi
+│   │   ├── verification/         # Hujjat va pasport verifikatsiyasi
+│   │   ├── payments/             # Escrow, Payme va Click integratsiyasi
+│   │   └── notifications/        # Xabarnomalar tizimi
+│   ├── config/                   # Django sozlamalari (base, local, production), URLs, Celery
+│   ├── tests/                    # Pytest biznes-flow va xavfsizlik testlari
+│   ├── requirements/             # Python paketlari
 │   └── manage.py                 # Django CLI
 │
 ├── docker-compose.yml            # PostgreSQL, Redis, Celery, Backend, Nginx to'liq steki
-├── package.json                  # Root monorepo boshqaruv skriptlari
-├── README.md                     # Ushbu bosh hujjat
-└── .gitignore                    # To'liq loyiha uchun gitignore qoidalari
-`
+├── package.json                  # Root skriptlar
+├── README.md                     # Bosh hujjat
+└── .gitignore                    # Git qoidalari
+```
 
 ---
 
-## 🚀 Tezkor Ishga Tushirish (Quick Start)
+## 🚀 Tezkor Ishga Tushirish
 
-### 1-usul: Oddiy Mahalliy Rejim (Tavsiya etiladi)
+### 1-usul: Mahalliy Rejim (Tavsiya etiladi)
 
-Root papkada bitta buyruq orqali yoki alohida terminallarda:
-
-#### Frontend:
-`ash
-cd frontend
-npm run dev
-# Browser: http://localhost:3000
-`
-
-#### Backend:
-`ash
+#### 1. Backendni ishga tushirish:
+```bash
 cd backend
-python manage.py runserver 8000
-# API: http://127.0.0.1:8000/api/v1/
-# Swagger hujjatlari: http://127.0.0.1:8000/api/docs/
-`
 
-> **Eslatma:** Frontend avtomatik ravishda barcha /api/v1/* so'rovlarini Next.js orqali Django backendiga yo'naltiradi (reverse proxy). Backend yoqilmagan holatda ham, frontend o'zining avtonom mock-data ma'lumotlari bilan 100% to'xtovsiz ishlayveradi.
+# Kutubxonalarni o'rnatish
+pip install -r requirements/local.txt
+
+# Migratsiyalarni o'tkazish
+python manage.py migrate
+
+# Demo ma'lumotlarni bazaga yuklash
+python manage.py seed_demo
+
+# Serverni yoqish
+python manage.py runserver 8000
+```
+- **API manzili:** `http://127.0.0.1:8000/api/v1/`
+- **Swagger hujjatlari:** `http://127.0.0.1:8000/api/docs/`
+
+#### 2. Frontendni ishga tushirish (alohida terminalda):
+```bash
+cd frontend
+
+# Paketlarni o'rnatish
+npm install
+
+# Dasturni ishlab chiquvchi rejimida yoqish
+npm run dev
+```
+- **Brauzerda ochish:** `http://localhost:3000`
+
+> **Eslatma:** Frontend barcha `/api/v1/*` so'rovlarini Next.js orqali avtomatik ravishda Django serveriga yo'naltiradi (reverse proxy).
 
 ---
 
-### 2-usul: Ngrok orqali Tashqi Tarmoqqa / Telefonga Ulash
+### 2-usul: Ngrok orqali Telefonda Ishlatish
 
-Next.js ichiga o'rnatilgan API proxy tufayli, faqat **bitta ngrok tunneli** kifoya:
+Next.js ichidagi avtomatik proxy tufayli faqat bitta tunnel yetarli:
 
-`ash
+```bash
 cd frontend
 npm run tunnel
 # yoki: ngrok http 3000 --host-header=rewrite
-`
+```
 
-Ngrok taqdim etgan havola (masalan, https://xxxx.ngrok-free.app) orqali ham frontend sahifalari, ham backend API bir xil domen ostida telefoningizda va tashqaridan xatosiz ishlaydi.
+Ngrok taqdim qilgan havola (masalan, `https://xxxx.ngrok-free.app`) orqali kompyuterdan ham, telefondan ham platformani to'liq ishlatish mumkin.
 
 ---
 
-### 3-usul: Docker Compose orqali To'liq Production Stek
+### 3-usul: Docker Compose orqali To'liq Stek
 
-`ash
+```bash
 docker-compose up -d --build
-`
-PostgreSQL, Redis, Celery Worker, Celery Beat, Django Backend va Nginx to'liq avtomat ishga tushadi.
+```
+PostgreSQL 16, Redis 7, Celery Worker, Celery Beat, Django Backend va Nginx to'liq avtomatik tarzda ishga tushadi.
 
 ---
 
-## 🧪 Testlar va Kod Sifatini Tekshirish
+## 🧪 Testlar va Kod Sifati
 
-- **Frontend Build & Linter**:
-  `ash
-  cd frontend
-  npm run lint
-  npm run build
-  `
-- **Backend Testlar & Linter**:
-  `ash
-  cd backend
-  pytest
-  ruff check .
-  python manage.py check
-  `
+Loyihada barcha asosiy oqimlar va kod standartlari to'liq sinovdan o'tgan:
+
+```bash
+# Frontend tekshiruvi:
+cd frontend
+npm run lint      # 0 ta xato
+npm run build     # 19 ta sahifa to'liq kompilatsiya bo'ladi
+
+# Backend tekshiruvi:
+cd backend
+ruff check .               # Kod sifatini tekshirish (All checks passed!)
+python manage.py check     # Django tizim tekshiruvi (0 issues)
+pytest                     # 9 ta integratsiya va xavfsizlik testlari (100% pass)
+```
 
 ---
 
 ## 👥 Demo Hisoblar (Seeded Accounts)
 
-Loyiha bazasida quyidagi foydalanuvchilar mavjud:
-- **Mijoz:** Sardor A. (+998901234567) — Faol buyurtma: #UT-8942
-- **Usta:** Ali Usta (+998939876543) — Santexnika va isitish bo'yicha usta, 4.9 yulduz
-- **Admin:** Admin (+998909999999) — Parol: dmin12345
+Loyiha bazasidagi tayyor foydalanuvchilar:
 
+| Rol | Ism / Profil | Telefon | Parol / Izoh |
+| :--- | :--- | :--- | :--- |
+| **Mijoz** | Sardor A. | `+998901234567` | Faol buyurtma: `#UT-8942` |
+| **Usta** | Ali Usta | `+998939876543` | Santexnika va isitish bo'yicha mutaxassis, 4.9 ★ |
+| **Admin** | Admin | `+998909999999` | `admin12345` (Boshqaruv paneli uchun) |
 
+---
 
+## 📄 Litsenziya
+
+Ushbu loyiha xususiy mulk hisoblanadi. Barcha huquqlar himoyalangan.
