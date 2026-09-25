@@ -1,0 +1,73 @@
+import { Conversation } from "@/types";
+
+export const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: "conv-ali",
+    peerId: "ali-karimov",
+    peerName: "Ali Karimov (Ali Usta)",
+    peerAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDEO8_6X8DRH3xqwrD2kgZ85JlrP3AQ8150pmUGfRFpA85-WD6tL7Gk0lDa4E_I3MJOpBNkh5vdZhKrd41_XgH_xB2TIPgdWySzbjVWEJQxWFtrXChbM8JE7CuH2j3SOX_8KQchAZkJvLrLxYVSfxXzFFpiCg7wUWjZUxV-eCeCAlZOctBffFZmGIJAQZ2gHa_LdeRbRAMfBqettSQFbvjgLwhRCdw64S0XH6oanNdKJbUODaRXrTjv6w",
+    peerRole: "Konditsioner ustasi",
+    lastMessage: "Assalomu alaykum, 10 daqiqada yetib boraman. Cobalt oq 01 A 777 BA.",
+    lastMessageTime: "17:38",
+    unreadCount: 1,
+    messages: [
+      {
+        id: "m1",
+        senderId: "user-sardor",
+        senderName: "Sardor A.",
+        senderRole: "CUSTOMER",
+        text: "Assalomu alaykum Ali aka, buyurtmani qabul qilganingiz uchun rahmat. Konditsioner 9-mavzeda joylashgan.",
+        timestamp: "15:36",
+        isMe: true,
+      },
+      {
+        id: "m2",
+        senderId: "ali-karimov",
+        senderName: "Ali Karimov",
+        senderRole: "PROVIDER",
+        text: "Va alaykum assalom! Freon balloni va karcher uskunasini olib yo‘lga chiqdim. Taxminan 17:50 da manzildaman.",
+        timestamp: "17:30",
+        isMe: false,
+      },
+      {
+        id: "m3",
+        senderId: "user-sardor",
+        senderName: "Sardor A.",
+        senderRole: "CUSTOMER",
+        text: "Yaxshi, 2-podyezd, 28-xonadon. Domofon kodi 45K.",
+        timestamp: "17:32",
+        isMe: true,
+      },
+      {
+        id: "m4",
+        senderId: "ali-karimov",
+        senderName: "Ali Karimov",
+        senderRole: "PROVIDER",
+        text: "Assalomu alaykum, 10 daqiqada yetib boraman. Cobalt oq 01 A 777 BA.",
+        timestamp: "17:38",
+        isMe: false,
+      },
+    ],
+  },
+  {
+    id: "conv-akmal",
+    peerId: "akmal-jorayev",
+    peerName: "Akmal Jo‘rayev",
+    peerAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAD-R03XzmEait4cjqXjfe2mzd_IuZ0XkcrFWeKwR9b4xJPOXcNUvLp9lm6LN7yMjgWapFemFG7of5Pwgxv2_FP5oKEjya-x5WW1PlxhDYbVuxY3WTQmNuuruoOpHQJrmUVIxW011MUmTd_Wp8AT0y-B8EqbIBtNEMqlCbvLKj3qOf79m14PSlNAY5P6Tn35KAH2DOZFCWlrZ1xlYz68QT9W9kmeS0AHPRSErRwovKkY3-maHuBJ5fKpg",
+    peerRole: "Bosh santexnik",
+    lastMessage: "Ishingizdan xursand bo'lganingizdan mamnunman, rahmat!",
+    lastMessageTime: "Kecha",
+    unreadCount: 0,
+    messages: [
+      {
+        id: "m10",
+        senderId: "akmal-jorayev",
+        senderName: "Akmal Jo‘rayev",
+        senderRole: "PROVIDER",
+        text: "Ishingizdan xursand bo'lganingizdan mamnunman, rahmat!",
+        timestamp: "12:00",
+        isMe: false,
+      },
+    ],
+  },
+];

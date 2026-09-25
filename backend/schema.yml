@@ -1,0 +1,2994 @@
+openapi: 3.0.3
+info:
+  title: Usta Top Marketplace API
+  version: 1.0.0
+  description: Uzbekistan Service Marketplace Backend API (Clean Django REST Framework)
+paths:
+  /api/v1/addresses/:
+    get:
+      operationId: addresses_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - addresses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAddressList'
+          description: ''
+    post:
+      operationId: addresses_create
+      tags:
+      - addresses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+  /api/v1/addresses/{id}/:
+    get:
+      operationId: addresses_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - addresses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    put:
+      operationId: addresses_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - addresses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    patch:
+      operationId: addresses_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - addresses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+          description: ''
+    delete:
+      operationId: addresses_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - addresses
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/admin/analytics/:
+    get:
+      operationId: admin_analytics_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/stats/:
+    get:
+      operationId: admin_stats_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/verifications/:
+    get:
+      operationId: admin_verifications_retrieve
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/verifications/{id}/approve/:
+    post:
+      operationId: admin_verifications_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/admin/verifications/{id}/reject/:
+    post:
+      operationId: admin_verifications_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - admin
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/intake/:
+    post:
+      operationId: ai_intake_create
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: auth_me_partial_update
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/bookings/:
+    get:
+      operationId: bookings_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookingList'
+          description: ''
+    post:
+      operationId: bookings_create
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{booking_id}/disputes/:
+    post:
+      operationId: bookings_disputes_create
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/bookings/{booking_id}/review/:
+    post:
+      operationId: bookings_review_create
+      parameters:
+      - in: path
+        name: booking_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/bookings/{id}/:
+    get:
+      operationId: bookings_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    put:
+      operationId: bookings_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    patch:
+      operationId: bookings_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBookingRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    delete:
+      operationId: bookings_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/bookings/{id}/advance/:
+    post:
+      operationId: bookings_advance_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/bookings/{id}/cancel/:
+    post:
+      operationId: bookings_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/v1/categories/:
+    get:
+      operationId: categories_list
+      parameters:
+      - in: query
+        name: featured
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: slug
+        schema:
+          type: string
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServiceCategoryList'
+          description: ''
+    post:
+      operationId: categories_create
+      tags:
+      - categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+          description: ''
+  /api/v1/categories/{slug}/:
+    get:
+      operationId: categories_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+          description: ''
+    put:
+      operationId: categories_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceCategoryRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+          description: ''
+    patch:
+      operationId: categories_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceCategoryRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCategory'
+          description: ''
+    delete:
+      operationId: categories_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/conversations/:
+    get:
+      operationId: conversations_retrieve
+      tags:
+      - conversations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/conversations/{id}/messages/:
+    get:
+      operationId: conversations_messages_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - conversations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: conversations_messages_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - conversations
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/disputes/:
+    get:
+      operationId: disputes_retrieve
+      tags:
+      - disputes
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/disputes/{id}/resolve/:
+    post:
+      operationId: disputes_resolve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - disputes
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/districts/:
+    get:
+      operationId: districts_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: region__id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: region__slug
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - districts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDistrictList'
+          description: ''
+  /api/v1/districts/{id}/:
+    get:
+      operationId: districts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Tuman.
+        required: true
+      tags:
+      - districts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/District'
+          description: ''
+  /api/v1/favorites/providers/:
+    get:
+      operationId: favorites_providers_retrieve
+      tags:
+      - favorites
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/favorites/providers/{provider_id}/:
+    post:
+      operationId: favorites_providers_create
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - favorites
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: favorites_providers_destroy
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - favorites
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_retrieve
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: notifications_read_all_create
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/create-intent/:
+    post:
+      operationId: payments_create_intent_create
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/webhooks/click/:
+    post:
+      operationId: payments_webhooks_click_create
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/payments/webhooks/payme/:
+    post:
+      operationId: payments_webhooks_payme_create
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/promotions/validate/:
+    post:
+      operationId: promotions_validate_create
+      tags:
+      - promotions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/provider/dashboard-stats/:
+    get:
+      operationId: provider_dashboard_stats_retrieve
+      tags:
+      - provider
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/provider/toggle-online/:
+    post:
+      operationId: provider_toggle_online_create
+      tags:
+      - provider
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/providers/:
+    get:
+      operationId: providers_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - providers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProviderList'
+          description: ''
+  /api/v1/providers/{id}/:
+    get:
+      operationId: providers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Usta profili.
+        required: true
+      tags:
+      - providers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+          description: ''
+  /api/v1/providers/{id}/portfolio/:
+    get:
+      operationId: providers_portfolio_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Usta profili.
+        required: true
+      tags:
+      - providers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+          description: ''
+  /api/v1/providers/{id}/services/:
+    get:
+      operationId: providers_services_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Usta profili.
+        required: true
+      tags:
+      - providers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Provider'
+          description: ''
+  /api/v1/providers/{provider_id}/reviews/:
+    get:
+      operationId: providers_reviews_retrieve
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - providers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/quotes/{id}/accept/:
+    post:
+      operationId: quotes_accept_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - quotes
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/quotes/{id}/reject/:
+    post:
+      operationId: quotes_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - quotes
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/regions/:
+    get:
+      operationId: regions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - regions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRegionList'
+          description: ''
+  /api/v1/regions/{id}/:
+    get:
+      operationId: regions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Viloyat / Shahar.
+        required: true
+      tags:
+      - regions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          description: ''
+  /api/v1/requests/:
+    get:
+      operationId: requests_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServiceRequestList'
+          description: ''
+    post:
+      operationId: requests_create
+      tags:
+      - requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateServiceRequest'
+          description: ''
+  /api/v1/requests/{id}/:
+    get:
+      operationId: requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+          description: ''
+    put:
+      operationId: requests_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+          description: ''
+    patch:
+      operationId: requests_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceRequestRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+          description: ''
+    delete:
+      operationId: requests_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/requests/{id}/attachments/:
+    post:
+      operationId: requests_attachments_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/requests/{id}/cancel/:
+    post:
+      operationId: requests_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+          description: ''
+  /api/v1/requests/{id}/matches/:
+    get:
+      operationId: requests_matches_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/requests/{request_id}/quotes/:
+    get:
+      operationId: requests_quotes_retrieve
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: requests_quotes_create
+      parameters:
+      - in: path
+        name: request_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - requests
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/services/:
+    get:
+      operationId: services_list
+      parameters:
+      - in: query
+        name: category__id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: category__slug
+        schema:
+          type: string
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServiceList'
+          description: ''
+    post:
+      operationId: services_create
+      tags:
+      - services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+  /api/v1/services/{id}/:
+    get:
+      operationId: services_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Xizmat.
+        required: true
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+    put:
+      operationId: services_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Xizmat.
+        required: true
+      tags:
+      - services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ServiceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+    patch:
+      operationId: services_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Xizmat.
+        required: true
+      tags:
+      - services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedServiceRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+          description: ''
+    delete:
+      operationId: services_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Xizmat.
+        required: true
+      tags:
+      - services
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Address:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        region:
+          type: string
+          format: uuid
+          nullable: true
+          title: Viloyat
+        district:
+          type: string
+          format: uuid
+          nullable: true
+          title: Tuman
+        regionName:
+          type: string
+          readOnly: true
+        districtName:
+          type: string
+          readOnly: true
+        address_text:
+          type: string
+          title: To‘liq manzil
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: Kenglik
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: Uzunlik
+        is_default:
+          type: boolean
+          title: Asosiy manzil
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_text
+      - created_at
+      - districtName
+      - id
+      - regionName
+    AddressRequest:
+      type: object
+      properties:
+        region:
+          type: string
+          format: uuid
+          nullable: true
+          title: Viloyat
+        district:
+          type: string
+          format: uuid
+          nullable: true
+          title: Tuman
+        address_text:
+          type: string
+          minLength: 1
+          title: To‘liq manzil
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: Kenglik
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: Uzunlik
+        is_default:
+          type: boolean
+          title: Asosiy manzil
+      required:
+      - address_text
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        orderNumber:
+          type: string
+        requestId:
+          type: string
+          readOnly: true
+        quoteId:
+          type: string
+          readOnly: true
+          nullable: true
+        customerId:
+          type: string
+          readOnly: true
+        customerName:
+          type: string
+          readOnly: true
+        customerPhone:
+          type: string
+          readOnly: true
+        provider:
+          allOf:
+          - $ref: '#/components/schemas/Provider'
+          readOnly: true
+        serviceName:
+          type: string
+        totalPrice:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        statusText:
+          type: string
+        scheduledTime:
+          type: string
+        estimatedArrival:
+          type: string
+        estimatedMinutesLeft:
+          type: integer
+        vehicle:
+          type: string
+          readOnly: true
+        destinationAddress:
+          type: string
+        distanceKm:
+          type: number
+          format: double
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingTimelineStep'
+          readOnly: true
+        paymentMethod:
+          type: string
+        isPaid:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - createdAt
+      - customerId
+      - customerName
+      - customerPhone
+      - destinationAddress
+      - distanceKm
+      - estimatedArrival
+      - estimatedMinutesLeft
+      - id
+      - isPaid
+      - orderNumber
+      - paymentMethod
+      - provider
+      - quoteId
+      - requestId
+      - scheduledTime
+      - serviceName
+      - statusText
+      - timeline
+      - totalPrice
+      - vehicle
+    BookingRequest:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+          minLength: 1
+        serviceName:
+          type: string
+          minLength: 1
+        totalPrice:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        statusText:
+          type: string
+          minLength: 1
+        scheduledTime:
+          type: string
+          minLength: 1
+        estimatedArrival:
+          type: string
+          minLength: 1
+        estimatedMinutesLeft:
+          type: integer
+        destinationAddress:
+          type: string
+          minLength: 1
+        distanceKm:
+          type: number
+          format: double
+        paymentMethod:
+          type: string
+          minLength: 1
+        isPaid:
+          type: boolean
+      required:
+      - destinationAddress
+      - distanceKm
+      - estimatedArrival
+      - estimatedMinutesLeft
+      - isPaid
+      - orderNumber
+      - paymentMethod
+      - scheduledTime
+      - serviceName
+      - statusText
+      - totalPrice
+    BookingTimelineStep:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 150
+        subtitle:
+          type: string
+          maxLength: 200
+        timestamp:
+          type: string
+        completed:
+          type: boolean
+        current:
+          type: boolean
+      required:
+      - timestamp
+      - title
+    BookingTimelineStepRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        subtitle:
+          type: string
+          maxLength: 200
+        timestamp:
+          type: string
+          minLength: 1
+        completed:
+          type: boolean
+        current:
+          type: boolean
+      required:
+      - timestamp
+      - title
+    CreateServiceRequest:
+      type: object
+      properties:
+        categoryId:
+          type: string
+        categoryName:
+          type: string
+        problemDescription:
+          type: string
+        detectedIssues:
+          type: array
+          items:
+            type: string
+        answers:
+          type: object
+          additionalProperties: {}
+        location:
+          type: object
+          additionalProperties: {}
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          default: URGENT
+        urgencyText:
+          type: string
+        hasAudio:
+          type: boolean
+          default: false
+        audioDuration:
+          type: string
+          default: ''
+        photos:
+          type: array
+          items:
+            type: string
+      required:
+      - categoryId
+      - problemDescription
+    CreateServiceRequestRequest:
+      type: object
+      properties:
+        categoryId:
+          type: string
+          minLength: 1
+        categoryName:
+          type: string
+        problemDescription:
+          type: string
+          minLength: 1
+        detectedIssues:
+          type: array
+          items:
+            type: string
+            minLength: 1
+        answers:
+          type: object
+          additionalProperties: {}
+        location:
+          type: object
+          additionalProperties: {}
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          default: URGENT
+        urgencyText:
+          type: string
+        hasAudio:
+          type: boolean
+          default: false
+        audioDuration:
+          type: string
+          default: ''
+        photos:
+          type: array
+          items:
+            type: string
+            minLength: 1
+      required:
+      - categoryId
+      - problemDescription
+    District:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Tuman/Shahar
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    PaginatedAddressList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+    PaginatedBookingList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booking'
+    PaginatedDistrictList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/District'
+    PaginatedProviderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Provider'
+    PaginatedRegionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Region'
+    PaginatedServiceCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceCategory'
+    PaginatedServiceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+    PaginatedServiceRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequest'
+    PatchedAddressRequest:
+      type: object
+      properties:
+        region:
+          type: string
+          format: uuid
+          nullable: true
+          title: Viloyat
+        district:
+          type: string
+          format: uuid
+          nullable: true
+          title: Tuman
+        address_text:
+          type: string
+          minLength: 1
+          title: To‘liq manzil
+          maxLength: 255
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: Kenglik
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+          title: Uzunlik
+        is_default:
+          type: boolean
+          title: Asosiy manzil
+    PatchedBookingRequest:
+      type: object
+      properties:
+        orderNumber:
+          type: string
+          minLength: 1
+        serviceName:
+          type: string
+          minLength: 1
+        totalPrice:
+          type: integer
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        statusText:
+          type: string
+          minLength: 1
+        scheduledTime:
+          type: string
+          minLength: 1
+        estimatedArrival:
+          type: string
+          minLength: 1
+        estimatedMinutesLeft:
+          type: integer
+        destinationAddress:
+          type: string
+          minLength: 1
+        distanceKm:
+          type: number
+          format: double
+        paymentMethod:
+          type: string
+          minLength: 1
+        isPaid:
+          type: boolean
+    PatchedServiceCategoryRequest:
+      type: object
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          title: Toifa nomi
+          maxLength: 150
+        description:
+          type: string
+          title: Tavsif
+        image:
+          type: string
+          format: uri
+          title: Rasm URL
+          maxLength: 500
+        featured:
+          type: boolean
+          title: Asosiy ekranda ko‘rsatish
+        is_active:
+          type: boolean
+          title: Faol
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Tartib
+    PatchedServiceRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          format: uuid
+          title: Kategoriya
+        name:
+          type: string
+          minLength: 1
+          title: Xizmat nomi
+          maxLength: 150
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Tavsif
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Boshlang‘ich narx (so‘m)
+        is_active:
+          type: boolean
+          title: Faol
+    PatchedServiceRequestRequest:
+      type: object
+      properties:
+        categoryId:
+          type: string
+          minLength: 1
+        problemDescription:
+          type: string
+          minLength: 1
+        detectedIssues:
+          type: array
+          items: {}
+        answers: {}
+        urgency:
+          $ref: '#/components/schemas/UrgencyEnum'
+        urgencyText:
+          type: string
+          minLength: 1
+        hasAudio:
+          type: boolean
+        audioDuration:
+          type: string
+    Provider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+        title:
+          type: string
+          title: To‘liq mutaxassislik
+          maxLength: 200
+        shortTitle:
+          type: string
+        avatar:
+          type: string
+          readOnly: true
+        coverImage:
+          type: string
+        rating:
+          type: number
+          format: double
+        reviewsCount:
+          type: integer
+        completedJobsCount:
+          type: integer
+        experienceYears:
+          type: integer
+        responseMinutes:
+          type: integer
+        verified:
+          type: boolean
+        phone:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          maxLength: 100
+        district:
+          type: string
+        addressFull:
+          type: string
+        priceRange:
+          type: string
+          readOnly: true
+        distanceKm:
+          type: string
+          readOnly: true
+        availableTime:
+          type: string
+        isOnline:
+          type: boolean
+        tags:
+          type: string
+          readOnly: true
+        categoryIds:
+          type: string
+          readOnly: true
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderServiceItem'
+          readOnly: true
+        portfolio:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProviderPortfolioItem'
+          readOnly: true
+        reviews:
+          type: string
+          readOnly: true
+        ratingMetrics:
+          type: string
+          readOnly: true
+        warrantyMonths:
+          type: integer
+        aboutText:
+          type: string
+        vehicleInfo:
+          type: string
+          readOnly: true
+      required:
+      - aboutText
+      - addressFull
+      - availableTime
+      - avatar
+      - categoryIds
+      - completedJobsCount
+      - coverImage
+      - distanceKm
+      - district
+      - experienceYears
+      - id
+      - isOnline
+      - name
+      - phone
+      - portfolio
+      - priceRange
+      - rating
+      - ratingMetrics
+      - responseMinutes
+      - reviews
+      - reviewsCount
+      - services
+      - shortTitle
+      - slug
+      - tags
+      - title
+      - vehicleInfo
+      - verified
+      - warrantyMonths
+    ProviderPortfolioItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 150
+        location:
+          type: string
+          maxLength: 150
+        imageUrl:
+          type: string
+      required:
+      - id
+      - imageUrl
+      - title
+    ProviderPortfolioItemRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+        location:
+          type: string
+          maxLength: 150
+        imageUrl:
+          type: string
+          minLength: 1
+      required:
+      - imageUrl
+      - title
+    ProviderRequest:
+      type: object
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+          title: To‘liq mutaxassislik
+          maxLength: 200
+        shortTitle:
+          type: string
+          minLength: 1
+        coverImage:
+          type: string
+          minLength: 1
+        rating:
+          type: number
+          format: double
+        reviewsCount:
+          type: integer
+        completedJobsCount:
+          type: integer
+        experienceYears:
+          type: integer
+        responseMinutes:
+          type: integer
+        verified:
+          type: boolean
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        district:
+          type: string
+          minLength: 1
+        addressFull:
+          type: string
+          minLength: 1
+        availableTime:
+          type: string
+          minLength: 1
+        isOnline:
+          type: boolean
+        warrantyMonths:
+          type: integer
+        aboutText:
+          type: string
+          minLength: 1
+      required:
+      - aboutText
+      - addressFull
+      - availableTime
+      - completedJobsCount
+      - coverImage
+      - district
+      - experienceYears
+      - isOnline
+      - name
+      - rating
+      - responseMinutes
+      - reviewsCount
+      - shortTitle
+      - slug
+      - title
+      - verified
+      - warrantyMonths
+    ProviderServiceItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Narx (so‘m)
+        priceFormatted:
+          type: string
+          readOnly: true
+        badge:
+          type: string
+          maxLength: 50
+        iconName:
+          type: string
+      required:
+      - iconName
+      - id
+      - name
+      - price
+      - priceFormatted
+    ProviderServiceItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Narx (so‘m)
+        badge:
+          type: string
+          maxLength: 50
+        iconName:
+          type: string
+          minLength: 1
+      required:
+      - iconName
+      - name
+      - price
+    Region:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          title: Viloyat/Shahar
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+        districts:
+          type: array
+          items:
+            $ref: '#/components/schemas/District'
+          readOnly: true
+      required:
+      - districts
+      - id
+      - name
+      - slug
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        category:
+          type: string
+          format: uuid
+          title: Kategoriya
+        categoryName:
+          type: string
+          readOnly: true
+        categorySlug:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          title: Xizmat nomi
+          maxLength: 150
+        slug:
+          type: string
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Tavsif
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Boshlang‘ich narx (so‘m)
+        is_active:
+          type: boolean
+          title: Faol
+      required:
+      - category
+      - categoryName
+      - categorySlug
+      - id
+      - name
+      - slug
+    ServiceCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          title: Toifa nomi
+          maxLength: 150
+        description:
+          type: string
+          title: Tavsif
+        iconName:
+          type: string
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          title: Rasm URL
+          maxLength: 500
+        mastersCount:
+          type: integer
+          readOnly: true
+        featured:
+          type: boolean
+          title: Asosiy ekranda ko‘rsatish
+        is_active:
+          type: boolean
+          title: Faol
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Tartib
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/Service'
+          readOnly: true
+      required:
+      - iconName
+      - id
+      - mastersCount
+      - name
+      - services
+      - slug
+    ServiceCategoryRequest:
+      type: object
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          title: Toifa nomi
+          maxLength: 150
+        description:
+          type: string
+          title: Tavsif
+        image:
+          type: string
+          format: uri
+          title: Rasm URL
+          maxLength: 500
+        featured:
+          type: boolean
+          title: Asosiy ekranda ko‘rsatish
+        is_active:
+          type: boolean
+          title: Faol
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Tartib
+      required:
+      - name
+      - slug
+    ServiceRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          format: uuid
+          title: Kategoriya
+        name:
+          type: string
+          minLength: 1
+          title: Xizmat nomi
+          maxLength: 150
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Tavsif
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          title: Boshlang‘ich narx (so‘m)
+        is_active:
+          type: boolean
+          title: Faol
+      required:
+      - category
+      - name
+      - slug
+    ServiceRequestRequest:
+      type: object
+      properties:
+        categoryId:
+          type: string
+          minLength: 1
+        problemDescription:
+          type: string
+          minLength: 1
+        detectedIssues:
+          type: array
+          items: {}
+        answers: {}
+        urgency:
+          $ref: '#/components/schemas/UrgencyEnum'
+        urgencyText:
+          type: string
+          minLength: 1
+        hasAudio:
+          type: boolean
+        audioDuration:
+          type: string
+      required:
+      - categoryId
+      - problemDescription
+    StatusEnum:
+      enum:
+      - CREATED
+      - CONFIRMED
+      - IN_TRANSIT
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      type: string
+      description: |-
+        * `CREATED` - Yaratildi
+        * `CONFIRMED` - Tasdiqlandi
+        * `IN_TRANSIT` - Usta yo‘lda
+        * `IN_PROGRESS` - Ish jarayonda
+        * `COMPLETED` - Bajarildi
+        * `CANCELLED` - Bekor qilindi
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    UrgencyEnum:
+      enum:
+      - URGENT
+      - TODAY
+      - TOMORROW
+      type: string
+      description: |-
+        * `URGENT` - ⚡ Shoshilinch (1-2 soatda)
+        * `TODAY` - Bugun kun davomida
+        * `TOMORROW` - Ertaga qulay vaqtda
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

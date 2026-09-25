@@ -1,0 +1,18 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    "**/migrations/*",
+    "venv",
+    ".venv",
+    "staticfiles",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = [
+    "F403", # 'from module import *' used
+    "F405", # defined from star imports
+    "E501", # line too long
+    "F841", # local variable assigned but never used
+]
