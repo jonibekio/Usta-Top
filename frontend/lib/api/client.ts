@@ -9,10 +9,16 @@
  */
 
 const getBaseUrl = (): string => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
   }
-  return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
+  if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "http://127.0.0.1:8000/api/v1";
+    }
+    return "/api/v1";
+  }
+  return process.env.INTERNAL_API_URL || "http://127.0.0.1:8000/api/v1";
 };
 
 interface RequestOptions extends RequestInit {
@@ -70,13 +76,29 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        // In case of 401, handle refresh token or signout
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        let errorMsg = `API Error: ${response.status} ${response.statusText}`;
+        try {
+          const errData = await response.json();
+          if (errData?.error?.message) {
+            errorMsg = errData.error.message;
+            if (errData.error.details?.non_field_errors?.[0]) {
+              errorMsg = errData.error.details.non_field_errors[0];
+            } else if (errData.error.details?.phone?.[0]) {
+              errorMsg = errData.error.details.phone[0];
+            }
+          } else if (errData?.message) {
+            errorMsg = errData.message;
+          } else if (errData?.detail) {
+            errorMsg = errData.detail;
+          } else if (errData?.non_field_errors?.[0]) {
+            errorMsg = errData.non_field_errors[0];
+          }
+        } catch {}
+        throw new Error(errorMsg);
       }
 
       return (await response.json()) as T;
     } catch (error) {
-      // Re-throw so caller or mock fallback handles it
       throw error;
     }
   }

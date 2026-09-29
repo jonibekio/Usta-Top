@@ -27,6 +27,7 @@ def health_ready(request):
 
 api_v1_patterns = [
     path("auth/", include("apps.users.urls")),
+    path("locations/", include("apps.locations.urls")),
     path("", include("apps.locations.urls")),
     path("", include("apps.catalog.urls")),
     path("", include("apps.providers.urls")),

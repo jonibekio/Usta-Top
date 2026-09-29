@@ -1,410 +1,565 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import {
+  Search,
   MapPin,
-  Clock,
-  Check,
-  ChevronDown,
-  SlidersHorizontal,
-  ShieldCheck,
-  Headphones,
+  Star,
+  CheckCircle,
+  Filter,
+  Loader2,
   Calendar,
-  Sparkles,
-  CreditCard,
-  Building,
+  Heart,
+  SlidersHorizontal,
+  X,
+  ArrowUpDown,
+  Briefcase,
+  Check,
 } from "lucide-react";
-import ProviderHeroCard from "@/components/providers/ProviderHeroCard";
-import ProviderCard from "@/components/providers/ProviderCard";
 import { getProviders } from "@/lib/api/providers";
-import { Provider } from "@/types";
+import { getCategories } from "@/lib/api/categories";
+import { getLocationHierarchy, RegionItem } from "@/lib/api/locations";
+import { getFavorites, toggleFavorite } from "@/lib/api/favorites";
+import { useLocation } from "@/lib/location/LocationContext";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { Provider, ServiceCategory } from "@/types";
+import EmptyState from "@/components/ui/EmptyState";
+import BookingModal from "@/components/bookings/BookingModal";
 
-export default function MatchResultsPage() {
-  // Filters state
-  const [maxPrice, setMaxPrice] = useState(250000);
-  const [distanceRadius, setDistanceRadius] = useState<number>(5);
-  const [selectedSort, setSelectedSort] = useState("recommended");
-  const [activeQuickChip, setActiveQuickChip] = useState("available-today");
+function UstalarContent() {
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category") || "";
+  const initialSearch = searchParams.get("search") || "";
 
-  // Providers list
+  const { isAuthenticated } = useAuth();
+  const { location, setLocation } = useLocation();
+
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  const [hierarchy, setHierarchy] = useState<RegionItem[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  // Filters
+  const [search, setSearch] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [selectedRegionId, setSelectedRegionId] = useState("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
+  const [minRating, setMinRating] = useState<string>("");
+  const [minExperience, setMinExperience] = useState<string>("");
+  const [ordering, setOrdering] = useState<string>("rating");
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Direct Booking state
+  const [bookingProvider, setBookingProvider] = useState<Provider | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    Promise.all([
+      getCategories(),
+      getLocationHierarchy(),
+    ]).then(([cats, locs]) => {
+      setCategories(cats);
+      setHierarchy(locs);
+
+      if (location?.regionSlug) {
+        const foundReg = locs.find((r) => r.slug === location.regionSlug || r.name === location.region);
+        if (foundReg) {
+          setSelectedRegionId(foundReg.id);
+          if (location.district && location.district !== "Barcha tumanlar") {
+            const foundDist = foundReg.districts.find((d) => d.name === location.district || d.slug === location.districtSlug);
+            if (foundDist) {
+              setSelectedDistrictId(foundDist.id);
+            }
+          }
+        }
+      }
+    });
+  }, [location]);
+
+  // Fetch favorites for current user
+  useEffect(() => {
+    if (isAuthenticated) {
+      getFavorites().then((favs) => {
+        setFavoriteIds(new Set(favs.map((f) => f.provider.id)));
+      });
+    } else {
+      setFavoriteIds(new Set());
+    }
+  }, [isAuthenticated]);
+
+  const activeRegion = hierarchy.find((r) => r.id === selectedRegionId);
+  const availableDistricts = activeRegion?.districts || [];
+
+  const handleRegionChange = (regId: string) => {
+    setSelectedRegionId(regId);
+    setSelectedDistrictId("");
+    const reg = hierarchy.find((r) => r.id === regId);
+    if (reg) {
+      setLocation(reg.name, reg.slug, "Barcha tumanlar", "");
+    }
+  };
+
+  const handleDistrictChange = (distId: string) => {
+    setSelectedDistrictId(distId);
+    const dist = availableDistricts.find((d) => d.id === distId);
+    if (dist && activeRegion) {
+      setLocation(activeRegion.name, activeRegion.slug, dist.name, dist.slug);
+    }
+  };
+
+  const fetchFilteredProviders = useCallback(() => {
+    setIsLoading(true);
+
+    const activeDist = availableDistricts.find((d) => d.id === selectedDistrictId);
+
     getProviders({
-      maxPrice,
-      verifiedOnly: activeQuickChip === "verified",
+      search: search.trim() || undefined,
+      category: selectedCategory || undefined,
+      region: activeRegion?.name || undefined,
+      district: activeDist?.name || undefined,
+      minRating: minRating ? parseFloat(minRating) : undefined,
+      experienceYears: minExperience ? parseInt(minExperience, 10) : undefined,
+      verifiedOnly: verifiedOnly || undefined,
+      ordering: ordering || undefined,
     })
-      .then((data) => {
-        if (data) setProviders(data);
+      .then((data) => setProviders(data))
+      .catch((err) => {
+        console.error("Failed to load providers:", err);
+        setProviders([]);
       })
       .finally(() => setIsLoading(false));
-  }, [maxPrice, activeQuickChip]);
+  }, [
+    search,
+    selectedCategory,
+    activeRegion,
+    selectedDistrictId,
+    availableDistricts,
+    minRating,
+    minExperience,
+    verifiedOnly,
+    ordering,
+  ]);
 
-  const heroProvider = providers[0] || null;
-  const otherProviders = providers.slice(1);
+  useEffect(() => {
+    fetchFilteredProviders();
+  }, [fetchFilteredProviders]);
+
+  const handleToggleFavorite = async (e: React.MouseEvent, providerId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      window.location.href = `/auth/login?redirect=/ustalar`;
+      return;
+    }
+
+    const isFav = favoriteIds.has(providerId);
+    // Optimistic update
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(providerId);
+      else next.add(providerId);
+      return next;
+    });
+
+    try {
+      const result = await toggleFavorite(providerId, isFav);
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (result) next.add(providerId);
+        else next.delete(providerId);
+        return next;
+      });
+    } catch {
+      // Revert on failure
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(providerId);
+        else next.delete(providerId);
+        return next;
+      });
+    }
+  };
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setSelectedCategory("");
+    setSelectedRegionId("");
+    setSelectedDistrictId("");
+    setMinRating("");
+    setMinExperience("");
+    setOrdering("rating");
+    setVerifiedOnly(false);
+  };
+
+  const hasActiveFilters = Boolean(
+    search ||
+      selectedCategory ||
+      selectedRegionId ||
+      selectedDistrictId ||
+      minRating ||
+      minExperience ||
+      verifiedOnly ||
+      ordering !== "rating"
+  );
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-surface">
-      {/* 1. QUERY SUMMARY BANNER */}
-      <section className="w-full bg-surface-container-low py-3.5 shadow-sm border-b border-outline-variant/20">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Search Context Metadata */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded-full text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Konditsioner ta&apos;mirlash</span>
-            </div>
-            <span className="text-outline-variant">•</span>
-            <div className="flex items-center gap-1.5 bg-surface-container-high text-on-surface px-3 py-1 rounded-full text-xs font-medium">
-              <MapPin className="w-3.5 h-3.5 text-secondary" />
-              <span>Toshkent, Chilonzor</span>
-            </div>
-            <span className="text-outline-variant">•</span>
-            <div className="flex items-center gap-1.5 bg-secondary-container/20 text-secondary px-3 py-1 rounded-full text-xs font-bold">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Shoshilinch / Bugun</span>
-            </div>
-            <Link
-              href="/qidiruv"
-              className="text-primary hover:text-primary-container text-xs font-semibold underline ml-1 cursor-pointer"
-            >
-              O‘zgartirish
-            </Link>
+    <div className="w-full min-h-[calc(100vh-140px)] bg-surface py-8 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto flex flex-col gap-6">
+        {/* Top Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">
+              Ustalar katalogi
+            </h1>
+            <p className="text-xs md:text-sm text-on-surface-variant mt-1">
+              O‘zbekiston bo‘yicha malakali, saralangan va tekshirilgan ustalar
+            </p>
           </div>
-
-          {/* Live masters online indicator */}
-          <div className="flex items-center gap-2 text-on-surface-variant text-xs">
-            <span className="inline-flex relative items-center justify-center w-2.5 h-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-container opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-tertiary-container" />
-            </span>
-            <span>
-              Ayni damda hududda <strong className="text-on-surface font-semibold">24 nafar</strong> usta onlayn
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-on-surface-variant">
+              Topildi: <strong className="text-on-surface text-sm">{providers.length}</strong> ta usta
             </span>
           </div>
         </div>
-      </section>
 
-      {/* 2. TITLE & INSTANT FILTERS BAR */}
-      <section className="w-full bg-surface py-6">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-1.5 text-primary text-xs font-bold tracking-wider uppercase mb-1">
-                <Check className="w-4 h-4 stroke-[3]" />
-                <span>Algoritm tekshiruvidan o‘tdi</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">
-                Sizning muammoingizga mos <span className="text-primary">{providers.length} ta ishonchli usta</span> topildi
-              </h1>
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-2 shrink-0 self-start md:self-auto">
-              <label htmlFor="sort-select" className="text-xs text-on-surface-variant uppercase tracking-wider font-bold">
-                Saralash:
-              </label>
-              <div className="relative">
-                <select
-                  id="sort-select"
-                  value={selectedSort}
-                  onChange={(e) => setSelectedSort(e.target.value)}
-                  className="appearance-none bg-surface-container-low text-on-surface text-xs md:text-sm font-semibold pl-3 pr-8 py-2 rounded-xl cursor-pointer hover:bg-surface-container focus:outline-none shadow-sm border border-outline-variant/30"
+        {/* Primary Filter Bar */}
+        <div className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col gap-3">
+          <div className="flex flex-col md:flex-row items-center gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 w-full flex items-center">
+              <Search className="w-4 h-4 text-on-surface-variant absolute left-3.5" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Usta ismi yoki mutaxassislik bo‘yicha qidirish..."
+                className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl pl-10 pr-3 py-2.5 text-xs sm:text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-3 text-on-surface-variant hover:text-on-surface p-1"
                 >
-                  <option value="recommended">Tavsiya etilgan bo‘yicha</option>
-                  <option value="rating">Reytingi yuqorilar (5.0 - 4.8)</option>
-                  <option value="price_asc">Avval arzon narxlilar</option>
-                  <option value="distance">Eng yaqin masofadagilar</option>
-                  <option value="jobs">Eng ko‘p ish bajarganlar</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant w-4 h-4" />
-              </div>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+
+            {/* Category Select */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-surface-container-low border border-outline-variant/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary w-full md:w-56 font-medium"
+            >
+              <option value="">Barcha xizmatlar</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Region Select */}
+            <select
+              value={selectedRegionId}
+              onChange={(e) => handleRegionChange(e.target.value)}
+              className="bg-surface-container-low border border-outline-variant/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary w-full md:w-48 font-medium"
+            >
+              <option value="">Barcha viloyatlar</option>
+              {hierarchy.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+
+            {/* District Select (dynamic based on selected region) */}
+            {availableDistricts.length > 0 && (
+              <select
+                value={selectedDistrictId}
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                className="bg-surface-container-low border border-outline-variant/40 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary w-full md:w-48 font-medium animate-in fade-in"
+              >
+                <option value="">Barcha tumanlar</option>
+                {availableDistricts.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Filter Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                showAdvancedFilters || minRating || minExperience
+                  ? "bg-primary/10 border-primary text-primary"
+                  : "bg-surface-container-low border-outline-variant/40 text-on-surface hover:bg-surface-container"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Filtrlar</span>
+            </button>
           </div>
 
-          {/* Quick Chips Scroll Row */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {[
-              { id: "available-today", label: "Bugun bo‘sh (12)", icon: <Calendar className="w-3.5 h-3.5" /> },
-              { id: "high-rating", label: "⭐ 4.8 va undan yuqori (15)", icon: null },
-              { id: "verified-all", label: "Tasdiqlangan (Hamma)", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-              { id: "cheapest", label: "Eng arzon", icon: <CreditCard className="w-3.5 h-3.5" /> },
-              { id: "near", label: "Yaqin masofa (< 5 km)", icon: <MapPin className="w-3.5 h-3.5" /> },
-            ].map((chip) => {
-              const active = activeQuickChip === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => setActiveQuickChip(chip.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    active
-                      ? "bg-primary text-on-primary shadow-sm"
-                      : "bg-surface-container-high text-on-surface hover:bg-surface-variant"
-                  }`}
+          {/* Expanded Secondary Filters Strip */}
+          {showAdvancedFilters && (
+            <div className="pt-3 border-t border-outline-variant/20 flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              {/* Rating Filter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-on-surface-variant">Reyting:</span>
+                <select
+                  value={minRating}
+                  onChange={(e) => setMinRating(e.target.value)}
+                  className="bg-surface-container-low border border-outline-variant/40 rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                 >
-                  {chip.icon}
-                  <span>{chip.label}</span>
+                  <option value="">Barchasi</option>
+                  <option value="4.0">4.0+ yulduz</option>
+                  <option value="4.5">4.5+ yulduz</option>
+                  <option value="4.8">4.8+ yuqori reyting</option>
+                </select>
+              </div>
+
+              {/* Experience Filter */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-on-surface-variant">Tajriba:</span>
+                <select
+                  value={minExperience}
+                  onChange={(e) => setMinExperience(e.target.value)}
+                  className="bg-surface-container-low border border-outline-variant/40 rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                >
+                  <option value="">Barchasi</option>
+                  <option value="1">1+ yil</option>
+                  <option value="3">3+ yil</option>
+                  <option value="5">5+ yil</option>
+                  <option value="10">10+ yil tajribali</option>
+                </select>
+              </div>
+
+              {/* Ordering / Sorting */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold text-on-surface-variant flex items-center gap-1">
+                  <ArrowUpDown className="w-3 h-3" />
+                  <span>Tartiblash:</span>
+                </span>
+                <select
+                  value={ordering}
+                  onChange={(e) => setOrdering(e.target.value)}
+                  className="bg-surface-container-low border border-outline-variant/40 rounded-lg px-2.5 py-1.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                >
+                  <option value="rating">Reyting bo‘yicha</option>
+                  <option value="price_asc">Narx: arzondan qimmatga</option>
+                  <option value="price_desc">Narx: qimmatdan arzonga</option>
+                  <option value="experience">Tajriba bo‘yicha</option>
+                  <option value="jobs">Bajarilgan ishlar soni</option>
+                </select>
+              </div>
+
+              {/* Verified Only Checkbox */}
+              <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant/40 bg-surface-container-low text-xs font-semibold text-on-surface cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={verifiedOnly}
+                  onChange={(e) => setVerifiedOnly(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded text-primary focus:ring-primary"
+                />
+                <span>Faqat tasdiqlangan</span>
+              </label>
+
+              {/* Reset all button */}
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="text-xs font-bold text-primary hover:underline ml-auto cursor-pointer"
+                >
+                  Filtrlarni tozalash
                 </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Results Grid */}
+        {isLoading ? (
+          <div className="w-full min-h-[350px] flex flex-col items-center justify-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-xs text-on-surface-variant font-medium">Ustalar saralanmoqda...</p>
+          </div>
+        ) : providers.length === 0 ? (
+          <EmptyState
+            title="Mos ustalar topilmadi"
+            description="Kiritilgan parametrlar va filtrlar bo‘yicha hozircha mutaxassis mavjud emas. Viloyat yoki toifani o‘zgartirib ko‘ring."
+            actionLabel="Filtrlarni tozalash"
+            onAction={handleResetFilters}
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {providers.map((p) => {
+              const isFav = favoriteIds.has(p.id);
+
+              return (
+                <div
+                  key={p.id}
+                  className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <Link
+                        href={`/ustalar/${p.slug || p.id}`}
+                        className="flex items-center gap-3 group-hover:opacity-95 transition-opacity"
+                      >
+                        <div className="w-13 h-13 rounded-full overflow-hidden bg-primary-fixed flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                          {p.avatar ? (
+                            <Image
+                              src={p.avatar}
+                              alt={p.name}
+                              width={52}
+                              height={52}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            p.name.charAt(0)
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <h3 className="text-base font-bold text-on-surface leading-tight hover:text-primary transition-colors">
+                              {p.name}
+                            </h3>
+                            {p.verified && (
+                              <span title="Tasdiqlangan mutaxassis">
+                                <CheckCircle className="w-4 h-4 text-tertiary-container fill-tertiary-container text-white shrink-0" />
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-on-surface-variant mt-0.5">{p.title}</p>
+                        </div>
+                      </Link>
+
+                      <div className="flex items-center gap-2">
+                        {/* Rating Pill */}
+                        <div className="flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded text-xs font-bold text-on-surface shrink-0">
+                          <Star className="w-3.5 h-3.5 text-secondary-container fill-secondary-container" />
+                          <span>{p.rating.toFixed(1)}</span>
+                          {p.reviewsCount > 0 && (
+                            <span className="text-[10px] text-on-surface-variant font-normal">
+                              ({p.reviewsCount})
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Favorite Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleToggleFavorite(e, p.id)}
+                          title={isFav ? "Sevimlilardan o‘chirish" : "Sevimlilarga saqlash"}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                            isFav
+                              ? "bg-red-500/10 text-red-500"
+                              : "text-on-surface-variant hover:text-red-500 hover:bg-surface-container"
+                          }`}
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${isFav ? "fill-red-500" : ""}`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Metadata Pill Row */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant mb-3">
+                      {(p.district || p.city) && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>
+                            {p.district ? `${p.district}, ` : ""}
+                            {p.city || "Toshkent"}
+                          </span>
+                        </div>
+                      )}
+                      {p.experienceYears > 0 && (
+                        <span>{p.experienceYears} yil tajriba</span>
+                      )}
+                      {p.completedJobsCount > 0 && (
+                        <span>{p.completedJobsCount} ta buyurtma</span>
+                      )}
+                    </div>
+
+                    {/* About snippet */}
+                    {p.aboutText && (
+                      <p className="text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">
+                        {p.aboutText}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Footer Row: Price + CTAs */}
+                  <div className="flex items-center justify-between pt-3 border-t border-outline-variant/20 gap-2">
+                    <div>
+                      <span className="text-[11px] text-on-surface-variant block">Narx</span>
+                      <span className="text-xs font-bold text-on-surface">
+                        {p.priceRange.formatted || `${p.priceRange.min.toLocaleString()} so‘mdan`}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setBookingProvider(p)}
+                        className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Buyurtma</span>
+                      </button>
+
+                      <Link
+                        href={`/ustalar/${p.slug || p.id}`}
+                        className="px-3.5 py-2 bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold rounded-xl transition-colors"
+                      >
+                        Profil
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
-        </div>
-      </section>
+        )}
+      </div>
 
-      {/* 3. MAIN SPLIT LAYOUT (25% FILTERS / 75% MASTER CARDS) */}
-      <main className="w-full pb-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Left Filter Sidebar */}
-            <aside className="w-full lg:col-span-4 flex flex-col gap-4">
-              <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-bold text-on-surface flex items-center gap-1.5">
-                    <SlidersHorizontal className="w-4 h-4 text-primary" />
-                    <span>Filtrlar</span>
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMaxPrice(400000);
-                      setDistanceRadius(10);
-                    }}
-                    className="text-xs text-secondary hover:text-on-secondary-container font-semibold cursor-pointer"
-                  >
-                    Tozalash
-                  </button>
-                </div>
-
-                {/* Price Range Filter */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-on-surface">Xizmat narxi (so‘m)</span>
-                    <span className="text-xs text-primary font-bold tnum">
-                      50 000 – {maxPrice.toLocaleString()} so‘m
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50000"
-                    max="400000"
-                    step="25000"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-full accent-primary h-2 bg-surface-container-high rounded-lg cursor-pointer"
-                  />
-                  <div className="flex items-center justify-between text-xs text-on-surface-variant">
-                    <span>50 000</span>
-                    <span>400 000+ so‘m</span>
-                  </div>
-                </div>
-
-                <div className="h-px bg-surface-container-high w-full" />
-
-                {/* Distance Filter */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-bold text-on-surface">Uzoqlik radiusi</span>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[1, 3, 5, 10].map((km) => {
-                      const isSelected = distanceRadius === km;
-                      return (
-                        <button
-                          key={km}
-                          type="button"
-                          onClick={() => setDistanceRadius(km)}
-                          className={`py-2 rounded-xl text-center text-xs font-semibold transition-all cursor-pointer ${
-                            isSelected
-                              ? "bg-primary text-on-primary shadow-sm"
-                              : "bg-surface-container text-on-surface hover:bg-surface-container-high"
-                          }`}
-                        >
-                          {km} km
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="h-px bg-surface-container-high w-full" />
-
-                {/* Experience Filter */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-bold text-on-surface">Usta tajribasi</span>
-                  <div className="flex flex-col gap-1.5 text-xs text-on-surface">
-                    <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 rounded text-primary accent-primary"
-                      />
-                      <span>3+ yil tajriba (18)</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 rounded text-primary accent-primary"
-                      />
-                      <span>5+ yil tajriba (14)</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded text-primary accent-primary"
-                      />
-                      <span>10+ yil tajriba (6)</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="h-px bg-surface-container-high w-full" />
-
-                {/* Additional Options */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-bold text-on-surface">Qo‘shimcha imkoniyatlar</span>
-                  <div className="flex flex-col gap-1.5 text-xs text-on-surface">
-                    <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 rounded text-primary accent-primary"
-                      />
-                      <span>Ehtiyot qismlar bilan</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 rounded text-primary accent-primary"
-                      />
-                      <span>Kafolat beradi (kamida 3 oy)</span>
-                    </label>
-                    <label className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-lg hover:bg-surface-container-low transition-colors">
-                      <input
-                        type="checkbox"
-                        defaultChecked
-                        className="w-4 h-4 rounded text-primary accent-primary"
-                      />
-                      <span>Humo / Uzcard orqali to‘lov</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Safe guarantee callout */}
-                <div className="bg-tertiary-fixed/20 p-3.5 rounded-xl flex items-start gap-2.5 border border-tertiary-fixed">
-                  <ShieldCheck className="w-5 h-5 text-tertiary-container shrink-0 mt-0.5" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-on-tertiary-fixed-variant">
-                      100% Xavfsiz Bitim
-                    </span>
-                    <span className="text-[11px] text-on-tertiary-fixed-variant mt-0.5 leading-snug">
-                      Ish qabul qilingandan keyingina ustaga to‘lov o‘tkaziladi.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* District Map Widget */}
-              <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-on-surface">Ustalar xaritada</span>
-                  <span className="text-xs text-primary cursor-pointer hover:underline">
-                    Kattalashtirish
-                  </span>
-                </div>
-                <div className="w-full h-44 rounded-xl bg-surface-container-high relative overflow-hidden flex items-end p-3 bg-gradient-to-tr from-surface-container to-surface-container-high border border-outline-variant/30">
-                  <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                    <Building className="w-24 h-24 text-primary" />
-                  </div>
-                  <div className="relative z-10 bg-surface/90 backdrop-blur-md px-3 py-1 rounded-lg text-on-surface text-xs font-semibold shadow-sm flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-secondary" />
-                    <span>Chilonzor tumani bo‘yicha 8 ta usta</span>
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            {/* Right Master Stream */}
-            <div className="w-full lg:col-span-8 flex flex-col gap-6">
-              {isLoading ? (
-                <div className="flex flex-col gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-full h-48 bg-surface-container-low animate-pulse rounded-2xl border border-outline-variant/30"
-                    />
-                  ))}
-                </div>
-              ) : providers.length === 0 ? (
-                <div className="bg-surface-container-lowest p-8 rounded-2xl text-center border border-outline-variant/30 flex flex-col items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
-                    <SlidersHorizontal className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-lg font-bold text-on-surface">Tanlangan parametrlar bo‘yicha usta topilmadi</h3>
-                  <p className="text-sm text-on-surface-variant max-w-md">
-                    Filtr mezonlarini kengaytiring yoki boshqa toifani tanlang.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMaxPrice(400000);
-                      setDistanceRadius(10);
-                      setActiveQuickChip("available-today");
-                    }}
-                    className="mt-2 px-4 py-2 bg-primary text-on-primary text-xs font-bold rounded-xl shadow hover:bg-primary-hover transition-colors cursor-pointer"
-                  >
-                    Filtrlarni tozalash
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Card 1: Top Recommended Hero Master */}
-                  {heroProvider && <ProviderHeroCard provider={heroProvider} />}
-
-                  {/* Other verified masters */}
-                  {otherProviders.map((provider) => (
-                    <ProviderCard key={provider.id} provider={provider} />
-                  ))}
-
-                  {/* Summary Footer */}
-                  {providers.length > 1 && (
-                    <div className="flex flex-col items-center justify-center gap-2 py-4">
-                      <p className="text-xs text-on-surface-variant text-center">
-                        Jami {providers.length} ta mutaxassis ko‘rsatilmoqda.
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Bottom Customer Support Assurance Box */}
-              <div className="bg-gradient-to-r from-primary-fixed/50 via-surface-container-high to-surface-container p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-primary-fixed">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow">
-                    <Headphones className="w-6 h-6" />
-                  </div>
-                  <div className="flex flex-col">
-                    <h4 className="text-sm font-bold text-on-surface">
-                      Mos ustani tanlashda qiynalyapsizmi?
-                    </h4>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
-                      Operatorimiz sizga 5 daqiqa ichida eng yaxshi 2 ta mutaxassisni bepul tavsiya qiladi.
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href="tel:+998712000000"
-                  className="shrink-0 px-6 py-2.5 bg-surface-container-lowest hover:bg-surface-bright text-primary text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
-                >
-                  Yordam olish
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
+      {/* Booking Modal */}
+      {bookingProvider && (
+        <BookingModal
+          isOpen={Boolean(bookingProvider)}
+          provider={bookingProvider}
+          onClose={() => setBookingProvider(null)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function MatchResultsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full min-h-[50vh] flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <UstalarContent />
+    </Suspense>
   );
 }

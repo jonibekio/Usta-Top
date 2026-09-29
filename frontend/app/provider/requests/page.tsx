@@ -1,222 +1,270 @@
 "use client";
 
-import React, { useState } from "react";
-import { MapPin, Send, Check } from "lucide-react";
-import { MOCK_REQUESTS } from "@/lib/mock-data/requests";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { MapPin, Clock, Send, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { getServiceRequests } from "@/lib/api/requests";
+import { createQuote } from "@/lib/api/quotes";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { ServiceRequest } from "@/types";
 
 export default function ProviderRequestsPage() {
-  const [requests] = useState<ServiceRequest[]>(MOCK_REQUESTS);
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeRequestForQuote, setActiveRequestForQuote] = useState<ServiceRequest | null>(null);
 
   // Quote form state
   const [serviceFee, setServiceFee] = useState("150000");
-  const [partsFee, setPartsFee] = useState("80000");
+  const [partsFee, setPartsFee] = useState("0");
   const [arrivalTime, setArrivalTime] = useState("Bugun 18:00");
   const [warranty, setWarranty] = useState("6 oy kafolat");
-  const [submittedCodes, setSubmittedCodes] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [quoteNotice, setQuoteNotice] = useState<string | null>(null);
+  const [submittedRequestIds, setSubmittedRequestIds] = useState<string[]>([]);
 
-  const handleSendQuote = (e: React.FormEvent) => {
+  useEffect(() => {
+    getServiceRequests()
+      .then((data) => setRequests(Array.isArray(data) ? data : []))
+      .catch((err) => console.error("Requests fetch error:", err))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const handleSendQuote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeRequestForQuote) {
-      setSubmittedCodes((prev) => [...prev, activeRequestForQuote.code]);
-      setQuoteNotice(`Mijozga taklifingiz muvaffaqiyatli yuborildi! Jami summa: ${(Number(serviceFee) + Number(partsFee)).toLocaleString()} so‘m`);
+    if (!activeRequestForQuote) return;
+
+    setIsSubmitting(true);
+    setQuoteNotice(null);
+
+    try {
+      await createQuote(activeRequestForQuote.id, {
+        serviceFee: Number(serviceFee) || 0,
+        partsFee: Number(partsFee) || 0,
+        arrivalTime,
+        warranty,
+        notes,
+      });
+
+      setSubmittedRequestIds((prev) => [...prev, activeRequestForQuote.id]);
+      setQuoteNotice(
+        `#${activeRequestForQuote.code} buyurtmasiga smeta taklifi yuborildi. Umumiy narx: ${(
+          Number(serviceFee) + Number(partsFee)
+        ).toLocaleString()} so‘m`
+      );
       setActiveRequestForQuote(null);
+    } catch (err: any) {
+      console.error("Quote submit error:", err);
+      setQuoteNotice(err?.message || "Taklif yuborishda xatolik yuz berdi.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  if (isAuthLoading || isLoading) {
+    return (
+      <div className="w-full min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col w-full min-h-screen bg-surface">
-      <div className="w-full bg-surface-container-low py-8 px-4 md:px-8 lg:px-12 border-b border-outline-variant/20">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <span className="text-xs uppercase tracking-wider text-secondary font-bold">
-              Yangi arizalar bozori
-            </span>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight mt-1">
-              Kelib tushgan mijoz so‘rovlari
-            </h1>
-            <p className="text-xs text-on-surface-variant mt-1">
-              Hududingizdagi mijozlar arizalarini ko‘rib chiqing va narx taklifi yuboring.
-            </p>
-          </div>
+    <div className="w-full min-h-[calc(100vh-140px)] bg-surface py-8 px-4 md:px-8">
+      <div className="max-w-5xl mx-auto flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">
+            Yangi mijoz arizalari
+          </h1>
+          <p className="text-xs md:text-sm text-on-surface-variant mt-1">
+            Mijozlar buyurtmalarini ko‘rib chiqing va narx taklifingizni yuboring
+          </p>
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto w-full px-4 md:px-8 lg:px-12 py-8 flex flex-col gap-4">
-        {requests.map((req) => {
-          const isSent = submittedCodes.includes(req.code);
-          return (
-            <div
-              key={req.id}
-              className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-4"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-outline-variant/20">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-primary">#{req.code}</span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-bold">
-                    {req.urgencyText}
-                  </span>
-                  <span className="text-xs text-on-surface-variant flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-primary" />
-                    {req.location.address}
-                  </span>
-                </div>
-                <span className="text-xs text-on-surface-variant">
-                  {new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
+        {quoteNotice && (
+          <div className="p-4 rounded-xl bg-tertiary-fixed/30 border border-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-between text-xs font-semibold">
+            <span>{quoteNotice}</span>
+            <button onClick={() => setQuoteNotice(null)} className="font-bold">✕</button>
+          </div>
+        )}
 
-              <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-bold text-on-surface">{req.problemDescription}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                  <div className="p-2.5 rounded-lg bg-surface-container-low">
-                    <span className="text-on-surface-variant">Qachondan:</span>{" "}
-                    <strong>{req.answers.timeframe}</strong>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-surface-container-low">
-                    <span className="text-on-surface-variant">Holat:</span>{" "}
-                    <strong>{req.answers.condition}</strong>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-surface-container-low">
-                    <span className="text-on-surface-variant">Brend:</span>{" "}
-                    <strong>{req.answers.brand}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-tertiary-container font-semibold">
-                  Tavsiya etilgan o‘rtacha narx: 80 000 – 250 000 so‘m
-                </span>
-
-                {isSent ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-on-tertiary-container bg-tertiary-container/10 px-4 py-2 rounded-xl">
-                    <Check className="w-4 h-4 stroke-[3]" /> Taklif yuborildi
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setActiveRequestForQuote(req)}
-                    className="h-10 px-5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Taklif yuborish</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Quote Proposal Modal */}
-      {activeRequestForQuote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 backdrop-blur-sm p-4">
-          <div className="bg-surface-container-lowest rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 border border-outline-variant/30">
-            <h3 className="text-lg font-bold text-on-surface">
-              Narx taklifi: #{activeRequestForQuote.code}
-            </h3>
-            <p className="text-xs text-on-surface-variant">
-              {activeRequestForQuote.problemDescription} ({activeRequestForQuote.location.address})
-            </p>
-
-            <form onSubmit={handleSendQuote} className="flex flex-col gap-3 text-xs">
-              <div>
-                <label className="block font-bold text-on-surface mb-1">
-                  Usta xizmat haqi (so‘m):
-                </label>
-                <input
-                  type="number"
-                  value={serviceFee}
-                  onChange={(e) => setServiceFee(e.target.value)}
-                  className="w-full h-11 px-3 bg-surface-container rounded-xl text-sm font-bold text-on-surface outline-none focus:ring-2 focus:ring-primary tnum"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-on-surface mb-1">
-                  Ehtiyot qismlar / Freon (so‘m):
-                </label>
-                <input
-                  type="number"
-                  value={partsFee}
-                  onChange={(e) => setPartsFee(e.target.value)}
-                  className="w-full h-11 px-3 bg-surface-container rounded-xl text-sm font-bold text-on-surface outline-none focus:ring-2 focus:ring-primary tnum"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-on-surface mb-1">
-                  Kelish vaqti:
-                </label>
-                <input
-                  type="text"
-                  value={arrivalTime}
-                  onChange={(e) => setArrivalTime(e.target.value)}
-                  className="w-full h-11 px-3 bg-surface-container rounded-xl text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-on-surface mb-1">
-                  Kafolat muddati:
-                </label>
-                <select
-                  value={warranty}
-                  onChange={(e) => setWarranty(e.target.value)}
-                  className="w-full h-11 px-3 bg-surface-container rounded-xl text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+        {requests.length === 0 ? (
+          <div className="bg-surface-container-lowest p-10 rounded-2xl border border-outline-variant/30 text-center text-xs text-on-surface-variant">
+            Hozircha ochiq buyurtmalar yo‘q. Yangi arizalar paydo bo‘lganda bu yerda ko‘rinadi.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {requests.map((req) => {
+              const isSent = submittedRequestIds.includes(req.id);
+              return (
+                <div
+                  key={req.id}
+                  className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col gap-4"
                 >
-                  <option value="1 oy kafolat">1 oy kafolat</option>
-                  <option value="3 oy kafolat">3 oy kafolat</option>
-                  <option value="6 oy kafolat">6 oy kafolat</option>
-                  <option value="12 oy kafolat">12 oy kafolat</option>
-                </select>
-              </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-outline-variant/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-primary">#{req.code}</span>
+                      <h3 className="text-base font-bold text-on-surface">{req.categoryName}</h3>
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-bold">
+                        {req.urgencyText || "Bugun"}
+                      </span>
+                    </div>
 
-              <div className="p-3 bg-surface-container-low rounded-xl flex items-center justify-between text-sm font-bold mt-1">
-                <span>Jami taklif:</span>
-                <span className="text-primary font-black tnum">
-                  {(Number(serviceFee) + Number(partsFee)).toLocaleString()} so‘m
-                </span>
-              </div>
+                    <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-primary" />
+                        <span>{req.location?.address}</span>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+                  <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+                    {req.problemDescription}
+                  </p>
+
+                  <div className="flex items-center justify-end pt-2">
+                    {isSent ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold">
+                        <CheckCircle className="w-4 h-4 text-tertiary-container" />
+                        Taklif yuborilgan
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setActiveRequestForQuote(req)}
+                        className="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Smeta taklif qilish</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Modal for Submitting Quote */}
+        {activeRequestForQuote && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm">
+            <div className="bg-surface-container-lowest rounded-2xl p-6 max-w-lg w-full shadow-xl border border-outline-variant/30 flex flex-col gap-4">
+              <div className="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+                <div>
+                  <h3 className="text-base font-bold text-on-surface">
+                    #{activeRequestForQuote.code} ga smeta yuborish
+                  </h3>
+                  <p className="text-xs text-on-surface-variant">{activeRequestForQuote.categoryName}</p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setActiveRequestForQuote(null)}
-                  className="px-4 h-10 rounded-xl bg-surface-container text-on-surface text-xs font-semibold cursor-pointer"
+                  className="text-xs font-bold text-on-surface-variant hover:text-on-surface"
                 >
-                  Bekor qilish
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 h-10 rounded-xl bg-primary hover:bg-primary-container text-on-primary text-xs font-bold shadow-sm cursor-pointer"
-                >
-                  Yuborish
+                  Yopish
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {quoteNotice && (
-        <div className="fixed top-24 right-4 z-50 max-w-sm bg-surface-container-lowest border border-outline-variant/40 shadow-xl rounded-2xl p-4 flex items-start gap-3">
-          <Check className="w-5 h-5 text-primary shrink-0 mt-0.5 stroke-[3]" />
-          <div className="flex-1 text-xs text-on-surface font-medium leading-relaxed">
-            {quoteNotice}
+              <form onSubmit={handleSendQuote} className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                      Xizmat haqi (so‘m)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={serviceFee}
+                      onChange={(e) => setServiceFee(e.target.value)}
+                      className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                      Ehtiyot qismlar (so‘m)
+                    </label>
+                    <input
+                      type="number"
+                      value={partsFee}
+                      onChange={(e) => setPartsFee(e.target.value)}
+                      className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                      Yetib kelish vaqti
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={arrivalTime}
+                      onChange={(e) => setArrivalTime(e.target.value)}
+                      placeholder="Bugun 18:00"
+                      className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                      Kafolat muddati
+                    </label>
+                    <input
+                      type="text"
+                      value={warranty}
+                      onChange={(e) => setWarranty(e.target.value)}
+                      placeholder="6 oy kafolat"
+                      className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1">
+                    Qo‘shimcha izoh
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Xizmat shartlari yoki ehtiyot qismlar bo‘yicha izoh..."
+                    className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl p-2.5 text-xs sm:text-sm text-on-surface focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-surface-container-low text-xs font-bold text-on-surface">
+                  <span>Jami hisoblangan summa:</span>
+                  <span className="text-sm font-black text-primary tnum">
+                    {(Number(serviceFee) + Number(partsFee)).toLocaleString()} so‘m
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveRequestForQuote(null)}
+                    className="px-4 py-2 border border-outline-variant/40 text-on-surface font-semibold text-xs rounded-xl"
+                  >
+                    Bekor qilish
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                  >
+                    {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    <span>Taklifni yuborish</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setQuoteNotice(null)}
-            className="text-on-surface-variant hover:text-on-surface cursor-pointer p-0.5"
-          >
-            <span className="text-base font-bold">×</span>
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

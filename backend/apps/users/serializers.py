@@ -50,6 +50,18 @@ class RegisterSerializer(serializers.Serializer):
             last_name=last_name,
             **validated_data,
         )
+
+        if user.role == User.Role.PROVIDER:
+            from apps.providers.models import ProviderProfile
+            slug = f"usta-{user.id.hex[:8]}"
+            ProviderProfile.objects.create(
+                user=user,
+                slug=slug,
+                display_name=name if name else f"Usta {first_name}".strip(),
+                title="Mutaxassis usta",
+                short_title="Usta",
+            )
+
         return user
 
 class LoginSerializer(serializers.Serializer):

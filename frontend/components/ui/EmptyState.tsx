@@ -6,6 +6,7 @@ interface EmptyStateProps {
   title?: string;
   description?: string;
   actionText?: string;
+  actionLabel?: string;
   actionHref?: string;
   onAction?: () => void;
   icon?: React.ReactNode;
@@ -15,10 +16,13 @@ export default function EmptyState({
   title = "Hech qanday ma’lumot topilmadi",
   description = "Qidiruv parametrlarini o‘zgartirib qayta urinib ko‘ring.",
   actionText,
+  actionLabel,
   actionHref,
   onAction,
   icon,
 }: EmptyStateProps) {
+  const btnText = actionLabel || actionText;
+
   return (
     <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 max-w-lg mx-auto my-8">
       <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-primary-container mb-4">
@@ -26,20 +30,20 @@ export default function EmptyState({
       </div>
       <h3 className="text-lg font-bold text-on-surface mb-1">{title}</h3>
       <p className="text-sm text-on-surface-variant mb-6 max-w-sm">{description}</p>
-      {actionText && actionHref && (
+      {btnText && actionHref && (
         <Link
           href={actionHref}
           className="h-11 px-6 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm flex items-center justify-center transition-all shadow-sm"
         >
-          {actionText}
+          {btnText}
         </Link>
       )}
-      {actionText && onAction && (
+      {btnText && onAction && (
         <button
           onClick={onAction}
           className="h-11 px-6 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-semibold text-sm flex items-center justify-center transition-all shadow-sm cursor-pointer"
         >
-          {actionText}
+          {btnText}
         </button>
       )}
     </div>

@@ -31,4 +31,14 @@ def create_review_service(booking_id, customer, validated_data):
     )
 
     recalculate_provider_rating(booking.provider)
+
+    from apps.notifications.models import Notification
+    Notification.objects.create(
+        user=booking.provider.user,
+        notification_type=Notification.NotificationType.NEW_REVIEW,
+        title=f"Yangi sharh: {review.rating}★",
+        body=f"Mijoz {customer.full_name} sizga {review.rating} yulduzli baho va sharh qoldirdi: \"{review.comment[:60]}\"",
+        data={"booking_id": str(booking.id), "review_id": str(review.id)},
+    )
+
     return review

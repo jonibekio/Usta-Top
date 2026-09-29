@@ -48,7 +48,7 @@ export default function LocationModal({
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             className="p-3 rounded-lg bg-surface-container text-on-surface text-sm font-medium outline-none focus:ring-2 focus:ring-primary w-full resize-none"
-            placeholder="Masalan: 2-podyezd, kod 45K, 28-xonadon, Makro supermarketi ro‘parasida..."
+            placeholder="Podyezd, qavat, xonadon yoki asosiy mo‘ljal"
             rows={3}
           />
         </div>

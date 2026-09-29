@@ -1,18 +1,24 @@
 import { apiClient, extractApiData } from "./client";
 import { Booking, BookingStatus } from "@/types";
-import { MOCK_BOOKINGS } from "../mock-data/bookings";
+
+export interface CreateBookingData {
+  provider_id: string;
+  service_name: string;
+  scheduled_date?: string;
+  scheduled_time?: string;
+  address_text: string;
+  notes?: string;
+  price?: number;
+}
 
 export async function getBookings(): Promise<Booking[]> {
   try {
     const res = await apiClient.get<any>("/bookings/");
     const list = extractApiData<Booking[]>(res);
-    if (Array.isArray(list)) {
-      return list;
-    }
-    return MOCK_BOOKINGS;
+    return Array.isArray(list) ? list : [];
   } catch (error) {
-    console.warn("Bookings API unreachable, using fallback:", error);
-    return MOCK_BOOKINGS;
+    console.error("Bookings API error:", error);
+    return [];
   }
 }
 
@@ -23,36 +29,30 @@ export async function getBookingById(idOrOrderNumber: string): Promise<Booking |
     if (data && (data.id || data.orderNumber)) {
       return data;
     }
-    return (
-      MOCK_BOOKINGS.find(
-        (b) => b.id === idOrOrderNumber || b.orderNumber === idOrOrderNumber || b.requestId === idOrOrderNumber
-      ) || null
-    );
+    return null;
   } catch (error) {
-    console.warn(`Booking ${idOrOrderNumber} unreachable, using fallback:`, error);
-    return (
-      MOCK_BOOKINGS.find(
-        (b) => b.id === idOrOrderNumber || b.orderNumber === idOrOrderNumber || b.requestId === idOrOrderNumber
-      ) || null
-    );
+    console.error(`Booking ${idOrOrderNumber} error:`, error);
+    return null;
   }
 }
 
-export async function updateBookingStatus(id: string, status: BookingStatus): Promise<Booking> {
-  try {
-    const res = await apiClient.patch<any>(`/bookings/${id}/`, { status });
-    const data = extractApiData<Booking>(res);
-    if (data && data.id) {
-      return data;
-    }
-    const booking = MOCK_BOOKINGS.find((b) => b.id === id) || MOCK_BOOKINGS[0];
-    return { ...booking, status };
-  } catch (error) {
-    console.warn(`Failed to update booking ${id}, updating state:`, error);
-    const booking = MOCK_BOOKINGS.find((b) => b.id === id) || MOCK_BOOKINGS[0];
-    return {
-      ...booking,
-      status,
-    };
-  }
+export async function createDirectBooking(data: CreateBookingData): Promise<Booking> {
+  const res = await apiClient.post<any>("/bookings/", data);
+  const created = extractApiData<Booking>(res);
+  if (!created) throw new Error("Buyurtma yaratilmadi");
+  return created;
+}
+
+export async function updateBookingStatus(id: string, status: BookingStatus, notes?: string): Promise<Booking> {
+  const res = await apiClient.post<any>(`/bookings/${id}/advance_status/`, {
+    target_status: status,
+    notes,
+  });
+  const data = extractApiData<Booking>(res);
+  if (!data) throw new Error("Status yangilanmadi");
+  return data;
+}
+
+export async function cancelBooking(id: string, reason = "Bekor qilindi"): Promise<void> {
+  await apiClient.post(`/bookings/${id}/cancel/`, { reason });
 }

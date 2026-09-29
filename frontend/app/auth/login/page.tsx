@@ -36,8 +36,8 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      phone: "901234567",
-      password: "password123",
+      phone: "",
+      password: "",
     },
   });
 
@@ -47,9 +47,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setLoginError(null);
     try {
-      const cleanPhone = data.phone.startsWith("+998") ? data.phone : `+998${data.phone.replace(/^998/, "")}`;
-      await login(cleanPhone, data.password, selectedRole);
-      if (selectedRole === "PROVIDER") {
+      const digits = data.phone.replace(/\D/g, "");
+      const cleanPhone = digits.startsWith("998") ? `+${digits}` : `+998${digits}`;
+      const loggedUser = await login(cleanPhone, data.password);
+      if (loggedUser?.role === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else if (loggedUser?.role === "PROVIDER" || selectedRole === "PROVIDER") {
         router.push("/provider/dashboard");
       } else {
         router.push("/");

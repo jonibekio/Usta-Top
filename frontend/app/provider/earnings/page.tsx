@@ -1,17 +1,44 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, Check, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ArrowDownLeft, Check, X, Wallet, AlertCircle } from "lucide-react";
+import { getBookings } from "@/lib/api/bookings";
+import { getProviderDashboardStats } from "@/lib/api/providers";
+import { Booking } from "@/types";
 
 export default function ProviderEarningsPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [payoutNotice, setPayoutNotice] = useState<string | null>(null);
 
-  const transactions = [
-    { id: "tx-1", title: "Konditsioner ta'miri (#UT-8942)", date: "Bugun, 15:35", amount: "+230 000 so‘m", status: "Kutilmoqda (Xavfsiz hisob)", type: "in" },
-    { id: "tx-2", title: "Santexnika xizmati (#UT-8920)", date: "Kecha, 18:20", amount: "+180 000 so‘m", status: "Hisobga tushdi", type: "in" },
-    { id: "tx-3", title: "Kartaga yechib olish (Humo ••4589)", date: "11-sentyabr", amount: "-1 500 000 so‘m", status: "Bajarildi", type: "out" },
-    { id: "tx-4", title: "Elektr nosozlik tuzatish (#UT-8902)", date: "10-sentyabr", amount: "+350 000 so‘m", status: "Hisobga tushdi", type: "in" },
-  ];
+  useEffect(() => {
+    Promise.all([getBookings(), getProviderDashboardStats()])
+      .then(([bList, sData]) => {
+        setBookings(bList || []);
+        setStats(sData);
+      })
+      .catch((err) => {
+        console.error("Failed to load earnings:", err);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const completedJobs = bookings.filter((b) => b.status === "COMPLETED");
+  const inProgressJobs = bookings.filter(
+    (b) => b.status === "IN_PROGRESS" || b.status === "IN_TRANSIT" || b.status === "CONFIRMED"
+  );
+
+  const totalEarned = completedJobs.reduce((sum, b) => sum + Number(b.totalPrice || 0), 0);
+  const pendingEscrow = inProgressJobs.reduce((sum, b) => sum + Number(b.totalPrice || 0), 0);
+
+  const handleRequestPayout = () => {
+    if (totalEarned <= 0) {
+      setPayoutNotice("Hozircha yechib olish uchun hisobda mablag‘ mavjud emas.");
+      return;
+    }
+    setPayoutNotice("Mablag‘ni yechib olish so‘rovi yuborildi. U 15 daqiqa ichida kartangizga o‘tkaziladi.");
+  };
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-surface">
@@ -21,7 +48,7 @@ export default function ProviderEarningsPage() {
             Moliya va hisob-kitob
           </span>
           <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight mt-1">
-            Usta daromadlari va kassa
+            Daromadlar va kassa
           </h1>
         </div>
       </div>
@@ -31,20 +58,22 @@ export default function ProviderEarningsPage() {
         <div className="bg-primary text-on-primary p-6 md:p-8 rounded-2xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden">
           <div className="flex flex-col gap-1 relative z-10">
             <span className="text-xs text-primary-fixed uppercase tracking-wider font-semibold">
-              Mavjud balans:
+              Umumiy daromad
             </span>
             <div className="text-3xl md:text-4xl font-black tracking-tight tnum">
-              3 350 000 so‘m
+              {isLoading ? "..." : `${totalEarned.toLocaleString()} so‘m`}
             </div>
-            <span className="text-xs text-primary-fixed-dim mt-1">
-              +230 000 so‘m faol buyurtma kafolat hisobida muzlatilgan
-            </span>
+            {pendingEscrow > 0 && (
+              <span className="text-xs text-primary-fixed-dim mt-1">
+                +{pendingEscrow.toLocaleString()} so‘m faol buyurtmalar jarayonida
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 relative z-10">
             <button
               type="button"
-              onClick={() => setPayoutNotice("Pul mablag‘larini kartaga o‘tkazish so‘rovi yuborildi! Mablag‘ 15 daqiqa ichida hisobingizga o‘tadi.")}
+              onClick={handleRequestPayout}
               className="h-11 px-6 rounded-xl bg-secondary-container hover:bg-secondary text-on-secondary font-bold text-xs shadow-md transition-all cursor-pointer"
             >
               Kartaga yechib olish
@@ -52,48 +81,80 @@ export default function ProviderEarningsPage() {
           </div>
         </div>
 
-        {/* Transactions Table */}
+        {/* Transactions / Earnings Table */}
         <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/30 flex flex-col gap-4">
-          <h3 className="text-base font-bold text-on-surface">Amallar tarixi</h3>
-          <div className="flex flex-col gap-2">
-            {transactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="p-4 rounded-xl bg-surface-container-low flex items-center justify-between gap-4 border border-outline-variant/20"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      tx.type === "in"
-                        ? "bg-tertiary-fixed text-tertiary-container"
-                        : "bg-surface-container text-on-surface-variant"
-                    }`}
-                  >
-                    {tx.type === "in" ? (
-                      <ArrowDownLeft className="w-5 h-5" />
-                    ) : (
-                      <ArrowUpRight className="w-5 h-5" />
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs md:text-sm font-bold text-on-surface">{tx.title}</span>
-                    <span className="text-[11px] text-on-surface-variant">{tx.date}</span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <span
-                    className={`block text-sm md:text-base font-extrabold tnum ${
-                      tx.type === "in" ? "text-tertiary-container" : "text-on-surface"
-                    }`}
-                  >
-                    {tx.amount}
-                  </span>
-                  <span className="text-[10px] text-on-surface-variant">{tx.status}</span>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-on-surface">Buyurtmalar bo‘yicha to‘lovlar</h3>
+            <span className="text-xs text-on-surface-variant font-medium">
+              Bajarilgan ishlar: {completedJobs.length} ta
+            </span>
           </div>
+
+          {isLoading ? (
+            <div className="flex flex-col gap-2">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-16 rounded-xl bg-surface-container-low animate-pulse border border-outline-variant/20"
+                />
+              ))}
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="py-12 flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant mb-3">
+                <Wallet className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-on-surface">Hozircha to‘lovlar tarixi mavjud emas</p>
+              <p className="text-xs text-on-surface-variant mt-1">
+                Buyurtmalarni bajarganingiz sari daromadlar bu yerda hisoblanib boradi.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {bookings.map((b) => {
+                const isCompleted = b.status === "COMPLETED";
+                return (
+                  <div
+                    key={b.id}
+                    className="p-4 rounded-xl bg-surface-container-low flex items-center justify-between gap-4 border border-outline-variant/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          isCompleted
+                            ? "bg-tertiary-fixed text-tertiary-container"
+                            : "bg-surface-container text-on-surface-variant"
+                        }`}
+                      >
+                        <ArrowDownLeft className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs md:text-sm font-bold text-on-surface">
+                          {b.serviceName || "Xizmat"} (#{b.orderNumber})
+                        </span>
+                        <span className="text-[11px] text-on-surface-variant">
+                          Mijoz: {b.customerName} {b.scheduledTime ? `• ${b.scheduledTime}` : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span
+                        className={`block text-sm md:text-base font-extrabold tnum ${
+                          isCompleted ? "text-primary font-bold" : "text-on-surface-variant"
+                        }`}
+                      >
+                        +{Number(b.totalPrice || 0).toLocaleString()} so‘m
+                      </span>
+                      <span className="text-[11px] text-on-surface-variant">
+                        {isCompleted ? "To‘langan" : b.statusText || "Jarayonda"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

@@ -30,12 +30,29 @@ class District(models.Model):
     def __str__(self):
         return f"{self.name}, {self.region.name}"
 
+class Neighborhood(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    district = models.ForeignKey(District, on_delete=models.CASCADE, related_name="neighborhoods", verbose_name="Tuman")
+    name = models.CharField(max_length=150, verbose_name="Mahalla / Hudud")
+    slug = models.SlugField(max_length=150)
+
+    class Meta:
+        verbose_name = "Mahalla / Hudud"
+        verbose_name_plural = "Mahallalar va Hududlar"
+        unique_together = ("district", "slug")
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.district.name})"
+
 class Address(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="addresses", verbose_name="Foydalanuvchi")
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Viloyat")
     district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Tuman")
+    neighborhood = models.ForeignKey(Neighborhood, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Mahalla / Hudud")
     address_text = models.CharField(max_length=255, verbose_name="To‘liq manzil")
+    landmark = models.CharField(max_length=255, blank=True, default="", verbose_name="Mo‘ljal")
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, verbose_name="Kenglik")
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, verbose_name="Uzunlik")
     is_default = models.BooleanField(default=False, verbose_name="Asosiy manzil")

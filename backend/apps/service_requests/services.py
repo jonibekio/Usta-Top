@@ -16,6 +16,17 @@ VALID_TRANSITIONS = {
 
 @transaction.atomic
 def create_request_service(customer, data):
+    if not customer or not customer.is_authenticated:
+        from apps.users.models import User
+        phone = data.get("phone") or data.get("location", {}).get("phone")
+        if phone:
+            from common.validators import validate_uz_phone
+            clean_phone = validate_uz_phone(phone)
+            customer, _ = User.objects.get_or_create(phone=clean_phone, defaults={"role": User.Role.CUSTOMER, "first_name": "Mijoz"})
+        else:
+            customer = User.objects.filter(role=User.Role.CUSTOMER).first()
+            if not customer:
+                customer = User.objects.create_user(phone="+998901234567", password="password123", role=User.Role.CUSTOMER, first_name="Mijoz")
     cat_identifier = data.get("categoryId")
     category = None
     try:

@@ -38,6 +38,8 @@ class QuoteExpiredError(BusinessLogicError):
     code = "QUOTE_EXPIRED"
 
 def custom_exception_handler(exc, context):
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
     if isinstance(exc, BusinessLogicError):
         return Response(
             {
@@ -49,6 +51,20 @@ def custom_exception_handler(exc, context):
                 },
             },
             status=exc.status_code,
+        )
+
+    if isinstance(exc, DjangoValidationError):
+        msg = exc.messages[0] if hasattr(exc, "messages") and exc.messages else str(exc)
+        return Response(
+            {
+                "success": False,
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": msg,
+                    "details": getattr(exc, "message_dict", {}),
+                },
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     response = exception_handler(exc, context)

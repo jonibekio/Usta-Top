@@ -16,7 +16,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Usta Top — Ishonchli Mahalliy Ustalar Portali | Toshkent, O‘zbekiston",
   description:
-    "Muammoingizni ayting, mos ustani topamiz. Santexnik, elektrik, konditsioner va boshqa sohalardagi 10,000+ tekshirilgan ustalar.",
+    "O‘zbekistondagi ishonchli va tekshirilgan ustalarni topish platformasi. Santexnika, elektr, ta’mirlash va maishiy xizmatlar.",
   icons: {
     icon: "/assets/icons/logo.svg",
   },

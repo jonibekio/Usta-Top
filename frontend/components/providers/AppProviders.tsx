@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/lib/auth/AuthContext";
-import RoleSwitcherBar from "@/components/layout/RoleSwitcherBar";
+import { LocationProvider } from "@/lib/location/LocationContext";
+import LocationSelectorModal from "@/components/location/LocationSelectorModal";
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,8 +22,10 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
-        <RoleSwitcherBar />
+        <LocationProvider>
+          {children}
+          <LocationSelectorModal />
+        </LocationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

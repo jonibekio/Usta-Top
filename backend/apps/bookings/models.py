@@ -21,12 +21,13 @@ class Booking(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order_number = models.CharField(max_length=50, unique=True, db_index=True)
-    request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name="bookings")
+    request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name="bookings")
     quote = models.ForeignKey(Quote, on_delete=models.SET_NULL, null=True, blank=True, related_name="bookings")
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="customer_bookings")
     provider = models.ForeignKey(ProviderProfile, on_delete=models.CASCADE, related_name="provider_bookings")
 
     service_name = models.CharField(max_length=200, default="Konditsioner ta'miri")
+    problem_description = models.TextField(blank=True, default="", verbose_name="Muammo tavsifi")
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
 
     status = models.CharField(

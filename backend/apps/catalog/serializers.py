@@ -19,9 +19,11 @@ class ServiceSerializer(serializers.ModelSerializer):
             "is_active",
         ]
 
+from django.db import models
+
 class ServiceCategorySerializer(serializers.ModelSerializer):
     iconName = serializers.CharField(source="icon", read_only=True)
-    mastersCount = serializers.IntegerField(source="masters_count", read_only=True)
+    mastersCount = serializers.SerializerMethodField()
     services = ServiceSerializer(many=True, read_only=True)
 
     class Meta:
@@ -39,3 +41,13 @@ class ServiceCategorySerializer(serializers.ModelSerializer):
             "sort_order",
             "services",
         ]
+
+    def get_mastersCount(self, obj):
+        from apps.providers.models import ProviderProfile
+        return ProviderProfile.objects.filter(
+            status=ProviderProfile.Status.ACTIVE
+        ).filter(
+            models.Q(services__service__category=obj) |
+            models.Q(slug__icontains=obj.slug) |
+            models.Q(title__icontains=obj.name)
+        ).distinct().count()

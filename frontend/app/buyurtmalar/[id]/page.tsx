@@ -3,106 +3,171 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
 import {
-  ShieldCheck,
-  Check,
-  Star,
+  ArrowLeft,
+  CheckCircle,
   Clock,
-  Car,
   MapPin,
   Phone,
   MessageSquare,
   XCircle,
-  Handshake,
-  Headphones,
-  Navigation,
+  AlertCircle,
+  Loader2,
+  Calendar,
+  Star,
+  CheckCircle2,
+  X,
+  User,
+  Car,
 } from "lucide-react";
-import { useParams } from "next/navigation";
-import CancelModal from "@/components/bookings/CancelModal";
-import LocationModal from "@/components/bookings/LocationModal";
-import { getBookingById, updateBookingStatus } from "@/lib/api/bookings";
-import { getQuotesForRequest, acceptQuote, rejectQuote } from "@/lib/api/quotes";
-import { Booking, Quote } from "@/types";
-import { MOCK_QUOTES } from "@/lib/mock-data/quotes";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { getBookingById, cancelBooking } from "@/lib/api/bookings";
+import { getServiceRequestById } from "@/lib/api/requests";
+import { getQuotesForRequest, acceptQuote } from "@/lib/api/quotes";
+import { startConversation } from "@/lib/api/conversations";
+import { createBookingReview } from "@/lib/api/reviews";
+import { Booking, ServiceRequest, Quote } from "@/types";
 
-export default function BookingDetailPage() {
+export default function OrderDetailPage() {
+  const router = useRouter();
   const params = useParams();
-  const id = (params?.id as string) || "";
+  const rawId = (params?.id as string) || "";
+  const id = decodeURIComponent(rawId);
 
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [requestObj, setRequestObj] = useState<ServiceRequest | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [toastNotice, setToastNotice] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // Modals state
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState("");
-  const [bookingStatus, setBookingStatus] = useState("");
+  // Review modal state
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    getBookingById(id)
-      .then((data) => {
-        if (data) {
-          setBooking(data);
-          setCurrentAddress(data.destinationAddress);
-          setBookingStatus(data.statusText || "Jarayonda");
-          if (data.requestId) {
-            getQuotesForRequest(data.requestId).then((qList) => {
-              if (Array.isArray(qList) && qList.length > 0) setQuotes(qList);
-              else setQuotes(MOCK_QUOTES);
-            });
-          } else {
-            setQuotes(MOCK_QUOTES);
-          }
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const bData = await getBookingById(id);
+      if (bData) {
+        setBooking(bData);
+        if (bData.requestId) {
+          const qList = await getQuotesForRequest(bData.requestId);
+          setQuotes(qList);
         }
-      })
-      .catch((err) => {
-        console.warn("Failed to load booking", err);
-      })
-      .finally(() => setIsLoading(false));
-  }, [id]);
-
-  const handleCancelConfirm = (reason: string) => {
-    setIsCancelModalOpen(false);
-    if (booking) {
-      updateBookingStatus(booking.id, "CANCELLED").catch(console.warn);
-      setBookingStatus("Bekor qilindi");
-      setToastNotice(`Buyurtma bekor qilindi. Sabab: ${reason}`);
+      } else {
+        const rData = await getServiceRequestById(id);
+        if (rData) {
+          setRequestObj(rData);
+          const qList = await getQuotesForRequest(rData.id);
+          setQuotes(qList);
+        }
+      }
+    } catch (err) {
+      console.error("Order detail load error:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleLocationSave = (notes: string) => {
-    setIsLocationModalOpen(false);
-    if (notes) {
-      setCurrentAddress((prev) => `${prev} (${notes})`);
+  useEffect(() => {
+    if (id) loadData();
+  }, [id]);
+
+  const handleAcceptQuote = async (quoteId: string) => {
+    setActionLoading(true);
+    setNotice(null);
+    try {
+      await acceptQuote(quoteId);
+      setNotice("Smeta taklifi qabul qilindi va buyurtma tasdiqlandi!");
+      await loadData();
+    } catch (err: any) {
+      console.error("Accept quote error:", err);
+      setNotice(err?.message || "Taklifni qabul qilishda xatolik yuz berdi.");
+    } finally {
+      setActionLoading(false);
     }
-    setToastNotice("Manzil tafsilotlari ustaga yetkazildi.");
+  };
+
+  const handleCancel = async () => {
+    if (!window.confirm("Buyurtmani bekor qilishga ishonchingiz komilmi?")) return;
+    setActionLoading(true);
+    try {
+      if (booking) {
+        await cancelBooking(booking.id);
+      }
+      setNotice("Buyurtma bekor qilindi.");
+      await loadData();
+    } catch (err: any) {
+      setNotice("Bekor qilishda xatolik yuz berdi.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMessageProvider = async (providerId: string) => {
+    setActionLoading(true);
+    try {
+      await startConversation(providerId, "Assalomu alaykum!");
+      router.push("/xabarlar");
+    } catch (err) {
+      console.error("Message error:", err);
+      router.push("/xabarlar");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!booking) return;
+
+    if (!reviewComment.trim()) {
+      alert("Iltimos, sharh matnini kiriting.");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      await createBookingReview(booking.id, {
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
+      setReviewSubmitted(true);
+      setIsReviewOpen(false);
+      setNotice("Sharhingiz va bahoyingiz muvaffaqiyatli saqlandi. Rahmat!");
+    } catch (err: any) {
+      console.error("Review submit error:", err);
+      alert(err?.message || "Sharh yuborishda xatolik yuz berdi.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-surface gap-4">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-on-surface-variant text-sm font-semibold">Buyurtma tafsilotlari yuklanmoqda...</p>
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-xs text-on-surface-variant font-medium">Buyurtma yuklanmoqda...</p>
       </div>
     );
   }
 
-  if (!booking) {
+  if (!booking && !requestObj) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-surface gap-4 px-4 text-center">
-        <div className="w-16 h-16 rounded-full bg-error-container/30 text-error flex items-center justify-center shadow-sm">
-          <XCircle className="w-8 h-8" />
-        </div>
-        <h1 className="text-2xl font-bold text-on-surface">Buyurtma topilmadi</h1>
-        <p className="text-sm text-on-surface-variant max-w-md">
-          Siz so‘ragan buyurtma kodi (#{id}) bo‘yicha hech qanday ma’lumot topilmadi.
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-3 px-4 text-center">
+        <XCircle className="w-12 h-12 text-error/50" />
+        <h1 className="text-xl font-bold text-on-surface">Buyurtma topilmadi</h1>
+        <p className="text-xs text-on-surface-variant max-w-sm">
+          Ko‘rsatilgan identifikator bo‘yicha buyurtma ma’lumotlari topilmadi.
         </p>
         <Link
           href="/buyurtmalar"
-          className="mt-2 px-6 py-2.5 bg-primary text-on-primary text-sm font-bold rounded-xl shadow hover:bg-primary-hover transition-colors"
+          className="mt-2 px-4 py-2 bg-primary text-on-primary text-xs font-semibold rounded-lg"
         >
           Buyurtmalar ro‘yxatiga qaytish
         </Link>
@@ -111,510 +176,413 @@ export default function BookingDetailPage() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-surface">
-      {/* 1. TOP HEADER BANNER */}
-      <div className="relative w-full overflow-hidden bg-surface-container-low py-6 lg:py-8 px-4 md:px-8 lg:px-12 border-b border-outline-variant/20">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="flex flex-col gap-2">
+    <div className="w-full min-h-[calc(100vh-140px)] bg-surface py-8 px-4 md:px-8">
+      <div className="max-w-4xl mx-auto flex flex-col gap-6">
+        {/* Back Link */}
+        <Link
+          href="/buyurtmalar"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant hover:text-on-surface w-fit"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Buyurtmalar ro‘yxatiga qaytish</span>
+        </Link>
+
+        {notice && (
+          <div className="p-4 rounded-xl bg-primary-fixed/20 border border-primary/20 text-on-surface text-xs font-semibold flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed text-xs font-bold uppercase tracking-wider">
-                Buyurtma #{booking.orderNumber}
-              </span>
-              <span className="px-3 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed text-xs font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-tertiary-container animate-pulse" />
-                {bookingStatus}
-              </span>
+              <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+              <span>{notice}</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">
-              {booking.serviceName}
-            </h1>
-            <p className="text-sm text-on-surface-variant max-w-2xl leading-relaxed">
-              3 ta saralangan usta taklif yubordi. Eng ma’qul smeta va vaqtni tasdiqladingiz, buyurtma hozir ijro bosqichida.
-            </p>
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              className="text-on-surface-variant hover:text-on-surface"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
+        )}
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="p-3.5 rounded-2xl bg-surface-container-highest/60 flex items-center gap-3 border border-outline-variant/30">
-              <div className="w-9 h-9 rounded-xl bg-surface-container-lowest flex items-center justify-center text-primary shadow-sm">
-                <ShieldCheck className="w-5 h-5 text-primary" />
+        {/* 1. Confirmed / Active / Completed Booking */}
+        {booking && (
+          <div className="flex flex-col gap-6">
+            {/* Header info */}
+            <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-primary">#{booking.orderNumber}</span>
+                  <StatusBadge status={booking.status} text={booking.statusText} />
+                </div>
+                <h1 className="text-xl font-extrabold text-on-surface mt-1">
+                  {booking.serviceName}
+                </h1>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  Vaqt: <strong className="text-on-surface">{booking.scheduledTime || "Bugun"}</strong>
+                </p>
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-[11px] text-on-surface-variant">Usta Top Himoyasi</span>
-                <span className="text-xs md:text-sm font-bold text-on-surface">100% Xavfsiz Xizmat</span>
+
+              <div className="text-left sm:text-right">
+                <span className="text-xs text-on-surface-variant block">To‘lov summasi</span>
+                <span className="text-xl font-black text-on-surface tnum">
+                  {booking.totalPrice.toLocaleString()} so‘m
+                </span>
+                <span className="text-[11px] text-on-surface-variant block mt-0.5">
+                  {booking.isPaid ? "To‘langan" : "Xizmat yakunida to‘lanadi"}
+                </span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto w-full px-4 md:px-8 lg:px-12 py-8 flex flex-col gap-8">
-        {/* 2. THREE COMPETING QUOTES CARDS */}
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <div>
-              <span className="text-xs uppercase tracking-wider text-secondary font-bold">
-                Tanlov va baholash
-              </span>
-              <h2 className="text-xl md:text-2xl font-bold text-on-surface">
-                Sizning buyurtmangizga kelgan narx takliflari
-              </h2>
-            </div>
-            <span className="text-xs text-on-surface-variant bg-surface-container px-3 py-1 rounded-full self-start sm:self-auto font-medium">
-              {quotes.length} ta usta taklif yubordi • 1 tasi tasdiqlangan
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
-            {quotes.map((quote, idx) => {
-              const isAccepted = quote.status === "ACCEPTED" || idx === 0;
-              const pAvatar =
-                quote.provider?.avatar &&
-                (quote.provider.avatar.startsWith("http") || quote.provider.avatar.startsWith("/"))
-                  ? quote.provider.avatar
-                  : "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150";
-
-              return (
-                <div
-                  key={quote.id || idx}
-                  className={`relative flex flex-col justify-between rounded-2xl bg-surface-container-lowest p-6 shadow-md transition-shadow border ${
-                    isAccepted
-                      ? "ring-2 ring-primary border-primary/20"
-                      : "border-outline-variant/30 hover:shadow-lg"
-                  }`}
-                >
-                  {isAccepted && (
-                    <div className="absolute -top-3.5 right-6 bg-primary text-on-primary text-xs font-bold uppercase tracking-wider py-1 px-3.5 rounded-full shadow-sm flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" /> Qabul qilingan
-                    </div>
-                  )}
-
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="relative shrink-0">
-                        <div className="w-14 h-14 rounded-full overflow-hidden shadow-sm bg-surface-container">
-                          <Image
-                            src={pAvatar}
-                            alt={quote.provider?.name || "Usta"}
-                            width={56}
-                            height={56}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-tertiary-container ring-2 ring-surface-container-lowest" />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="text-base font-bold text-on-surface truncate">
-                            {quote.provider?.name || "Usta"}
-                          </h3>
-                          <Check className="w-4 h-4 text-tertiary-container stroke-[3]" />
-                        </div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="w-3.5 h-3.5 text-secondary-container fill-secondary-container" />
-                          <span className="text-xs font-bold text-on-surface tnum">
-                            {(quote.provider?.rating || 4.9).toFixed(1)}
-                          </span>
-                          <span className="text-xs text-on-surface-variant">
-                            ({quote.provider?.reviewsCount || 24} sharh)
-                          </span>
-                        </div>
-                        <span className="text-xs text-on-surface-variant mt-0.5">
-                          {quote.provider?.title || "Sovutish tizimlari ustasi"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Itemized Price Breakdown */}
-                    <div className="p-4 rounded-xl bg-surface-container-low flex flex-col gap-2 border border-outline-variant/20">
-                      <span className="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">
-                        Narx taqsimoti
-                      </span>
-                      <div className="flex items-center justify-between text-xs text-on-surface">
-                        <span>Usta xizmat haqi</span>
-                        <span className="font-semibold tnum">
-                          {Number(quote.serviceFee || quote.totalPrice).toLocaleString()} so‘m
-                        </span>
-                      </div>
-                      {quote.partsFee ? (
-                        <div className="flex items-center justify-between text-xs text-on-surface">
-                          <span>Ehtiyot qismlar</span>
-                          <span className="font-semibold tnum">
-                            {Number(quote.partsFee).toLocaleString()} so‘m
-                          </span>
-                        </div>
-                      ) : null}
-                      <div className="mt-1 pt-2 border-t border-outline-variant/30 flex items-baseline justify-between">
-                        <span className="text-sm font-bold text-on-surface">Jami:</span>
-                        <div className="text-right">
-                          <span className="text-xl font-black text-primary tracking-tight tnum">
-                            {Number(quote.totalPrice).toLocaleString()}
-                          </span>{" "}
-                          <span className="text-xs text-on-surface-variant font-medium">so‘m</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Arrival & Warranty Badges */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container">
-                        <Clock className="w-4 h-4 text-primary shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-on-surface-variant uppercase">
-                            Kelish vaqti
-                          </span>
-                          <span className="font-bold text-on-surface">{quote.arrivalTime || "Bugun"}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-tertiary-fixed/30 text-on-tertiary-fixed-variant">
-                        <ShieldCheck className="w-4 h-4 text-tertiary-container shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-on-surface-variant uppercase">Kafolat</span>
-                          <span className="font-bold text-on-surface">{quote.warranty || "6 oy"}</span>
-                        </div>
-                      </div>
-                    </div>
+            {/* If completed and review not submitted, show rating CTA */}
+            {booking.status === "COMPLETED" && (
+              <div className="bg-surface-container-lowest p-6 rounded-2xl border border-secondary/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-secondary-container/20 flex items-center justify-center text-secondary shrink-0">
+                    <Star className="w-6 h-6 fill-secondary-container text-secondary" />
                   </div>
-
-                  <div className="mt-5 flex items-center gap-2">
-                    {isAccepted ? (
-                      <div className="flex items-center gap-1.5 text-on-tertiary-container bg-tertiary-container/10 px-4 py-2 rounded-xl w-full justify-center text-xs font-bold border border-tertiary-fixed">
-                        <Check className="w-4 h-4 stroke-[3]" />
-                        <span>Tasdiqlangan</span>
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            rejectQuote(quote.id).catch(console.warn);
-                            setToastNotice("Taklif rad etildi.");
-                          }}
-                          className="flex-1 h-11 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold transition-colors cursor-pointer"
-                        >
-                          Rad etish
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            acceptQuote(quote.id).catch(console.warn);
-                            setToastNotice(`${quote.provider?.name || "Usta"} taklifi tanlandi!`);
-                          }}
-                          className="flex-1 h-11 rounded-xl bg-primary hover:bg-primary-container text-on-primary text-xs font-bold transition-colors cursor-pointer"
-                        >
-                          Tanlash
-                        </button>
-                      </>
-                    )}
+                  <div>
+                    <h3 className="text-sm font-bold text-on-surface">
+                      {reviewSubmitted ? "Baholash uchun rahmat!" : "Xizmat sifatini baholang"}
+                    </h3>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
+                      {reviewSubmitted
+                        ? "Sizning fikringiz usta reytingini yangilashda hisobga olindi."
+                        : "Sizning sharhingiz boshqa mijozlarga to‘g‘ri tanlov qilishda yordam beradi."}
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
 
-        {/* 3. LIVE ORDER EXECUTION TRACKING SECTION */}
-        <section className="rounded-2xl bg-surface-container-lowest p-6 lg:p-8 shadow-sm border border-outline-variant/30 flex flex-col gap-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-outline-variant/20">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="flex h-3 w-3 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-secondary" />
-                </span>
-                <span className="text-xs text-secondary font-bold uppercase tracking-wider">
-                  Jonli ijro monitoringi
-                </span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface flex items-center gap-2">
-                Buyurtma holati: {bookingStatus}
-                <span className="text-2xl">🚗</span>
-              </h2>
-              <p className="text-sm text-on-surface-variant">
-                Usta siz ko‘rsatgan manzil tomon harakatlanmoqda. Uchrashuv joyida kutib olishga tayyor bo‘ling.
-              </p>
-            </div>
-
-            <div className="bg-primary-fixed/40 p-4 rounded-2xl flex items-center gap-4 shrink-0 border border-primary-fixed">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-on-primary shrink-0 shadow">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-on-primary-fixed-variant uppercase font-semibold">
-                  Taxminiy yetib kelish:
-                </span>
-                <span className="text-2xl font-black text-primary tnum">
-                  {booking.estimatedArrival}{" "}
-                  <span className="text-xs font-medium text-on-surface">
-                    ({booking.estimatedMinutesLeft} daqiqa qoldi)
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 5-Step Progress Timeline */}
-          <div className="relative py-2">
-            <div className="hidden md:block absolute top-6 left-12 right-12 h-1 bg-surface-container-high z-0">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-700"
-                style={{ width: "50%" }}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative z-10">
-              {(Array.isArray(booking.timeline) && booking.timeline.length > 0
-                ? booking.timeline
-                : [
-                    { title: "Buyurtma qabul qilindi", subtitle: "Operator tasdiqladi", completed: true, current: false },
-                    { title: "Usta biriktirildi", subtitle: "Usta qabul qildi", completed: true, current: false },
-                    { title: "Usta yo‘lda", subtitle: "Harakatlanmoqda", completed: false, current: true },
-                    { title: "Yetib keldi", subtitle: "Manzilda", completed: false, current: false },
-                    { title: "Tugallandi", subtitle: "To‘lov qabul qilindi", completed: false, current: false },
-                  ]
-              ).map((step, index) => (
-                <div
-                  key={step.title}
-                  className={`flex md:flex-col items-center md:items-center text-left md:text-center gap-3 ${
-                    index > 2 ? "opacity-60" : ""
-                  }`}
-                >
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
-                      step.completed
-                        ? "bg-tertiary text-on-tertiary"
-                        : step.current
-                        ? "bg-primary text-on-primary ring-4 ring-primary-fixed animate-pulse"
-                        : "bg-surface-container-high text-on-surface-variant"
-                    }`}
+                {!reviewSubmitted && (
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewOpen(true)}
+                    className="px-5 py-2.5 bg-primary hover:bg-primary-container text-on-primary text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer shrink-0"
                   >
-                    {step.completed ? (
-                      <Check className="w-5 h-5 stroke-[3]" />
-                    ) : step.current ? (
-                      <Car className="w-5 h-5" />
-                    ) : (
-                      <Clock className="w-5 h-5" />
-                    )}
+                    Baho va sharh qoldirish
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Provider and destination cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Provider Info */}
+              <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant block mb-3">
+                    Biriktirilgan mutaxassis
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-primary-fixed flex items-center justify-center font-bold text-primary shrink-0">
+                      {booking.provider?.avatar ? (
+                        <Image
+                          src={booking.provider.avatar}
+                          alt={booking.provider.name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        booking.provider?.name?.charAt(0) || "U"
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-on-surface">{booking.provider?.name}</h3>
+                      <p className="text-xs text-on-surface-variant">{booking.provider?.title}</p>
+                      {booking.vehicleModel && (
+                        <div className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-1">
+                          <Car className="w-3.5 h-3.5 text-primary" />
+                          <span>{booking.vehicleModel} {booking.vehiclePlate}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span
-                      className={`text-xs md:text-sm font-bold ${
-                        step.current ? "text-primary font-extrabold" : "text-on-surface"
-                      }`}
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-outline-variant/20 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleMessageProvider(booking.provider?.id || "")}
+                    disabled={actionLoading}
+                    className="flex-1 h-10 px-4 bg-primary hover:bg-primary-container text-on-primary font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Xabar yozish</span>
+                  </button>
+                  {booking.provider?.phone && (
+                    <a
+                      href={`tel:${booking.provider.phone}`}
+                      className="h-10 px-4 border border-outline-variant/50 hover:bg-surface-container text-on-surface font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors"
                     >
-                      {step.title}
-                    </span>
-                    <span className="text-[11px] text-on-surface-variant">{step.subtitle}</span>
+                      <Phone className="w-4 h-4 text-primary" />
+                      <span>Qo‘ng‘iroq</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Destination Address */}
+              <div className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant block mb-3">
+                    Xizmat ko‘rsatish manzili
+                  </span>
+                  <div className="flex items-start gap-2.5">
+                    <MapPin className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-on-surface">{booking.destinationAddress}</p>
+                      <p className="text-xs text-on-surface-variant mt-1">
+                        Mijoz: {booking.customerName} {booking.customerPhone ? `(${booking.customerPhone})` : ""}
+                      </p>
+                      {booking.problemDescription && (
+                        <p className="text-xs text-on-surface-variant mt-2 italic bg-surface-container-low p-2 rounded-lg">
+                          &ldquo;{booking.problemDescription}&rdquo;
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Details Row: Assigned Master info (7 cols) + Route Map & Actions (5 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
-            <div className="lg:col-span-7 flex flex-col gap-4">
-              <div className="p-5 rounded-2xl bg-surface-container-low flex flex-col gap-4 border border-outline-variant/20">
-                <span className="text-xs text-on-surface-variant font-bold uppercase tracking-wider">
-                  Tayinlangan usta va transport ma’lumotlari
+                {booking.status !== "COMPLETED" && booking.status !== "CANCELLED" && (
+                  <div className="pt-4 mt-4 border-t border-outline-variant/20 flex items-center justify-between">
+                    <span className="text-xs text-on-surface-variant">Rejalashtirilgan ish</span>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      disabled={actionLoading}
+                      className="text-xs font-semibold text-error hover:underline cursor-pointer"
+                    >
+                      Buyurtmani bekor qilish
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Timeline Steps */}
+            {booking.timeline && booking.timeline.length > 0 && (
+              <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
+                <h3 className="text-sm font-bold text-on-surface mb-4">Buyurtma bosqichlari</h3>
+                <div className="flex flex-col gap-4">
+                  {booking.timeline.map((step, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
+                          step.completed
+                            ? "bg-tertiary-container text-on-tertiary"
+                            : step.current
+                            ? "bg-primary text-on-primary ring-4 ring-primary-fixed"
+                            : "bg-surface-container text-on-surface-variant"
+                        }`}
+                      >
+                        {step.completed ? "✓" : idx + 1}
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-on-surface leading-tight">
+                          {step.title}
+                        </p>
+                        {step.subtitle && (
+                          <p className="text-xs text-on-surface-variant mt-0.5">{step.subtitle}</p>
+                        )}
+                        {step.timestamp && (
+                          <span className="text-[10px] text-on-surface-variant/60">{step.timestamp}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 2. Open Request awaiting quotes */}
+        {requestObj && !booking && (
+          <div className="flex flex-col gap-6">
+            <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/30 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-bold text-primary">#{requestObj.code}</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-xs font-bold">
+                  {requestObj.status === "OPEN" ? "Takliflar kutilmoqda" : requestObj.status}
                 </span>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden shadow-sm ring-2 ring-surface-container-lowest bg-surface-container shrink-0">
-                      <Image
-                        src={
-                          booking.provider?.avatar &&
-                          (booking.provider.avatar.startsWith("http") || booking.provider.avatar.startsWith("/"))
-                            ? booking.provider.avatar
-                            : "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150"
-                        }
-                        alt={booking.provider?.name || "Usta"}
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-lg font-bold text-on-surface">
-                          {booking.provider?.name || "Usta"}
-                        </span>
-                        <Check className="w-4 h-4 text-tertiary-container stroke-[3]" />
+              </div>
+              <h1 className="text-xl font-extrabold text-on-surface mt-2">
+                {requestObj.categoryName}
+              </h1>
+              <p className="text-xs sm:text-sm text-on-surface-variant mt-2 leading-relaxed">
+                {requestObj.problemDescription}
+              </p>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-on-surface-variant mt-4 pt-3 border-t border-outline-variant/20">
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <span>{requestObj.location?.address}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-secondary" />
+                  <span>{requestObj.urgencyText || "Bugun"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quotes list */}
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-3">
+                Ustalardan kelgan takliflar ({quotes.length})
+              </h2>
+
+              {quotes.length === 0 ? (
+                <div className="bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant/30 text-center flex flex-col items-center justify-center gap-2">
+                  <Clock className="w-8 h-8 text-on-surface-variant/40" />
+                  <p className="text-sm font-bold text-on-surface">Hozircha narx takliflari kelmadi</p>
+                  <p className="text-xs text-on-surface-variant max-w-sm">
+                    Sizning so‘rovingiz mutaxassislarga yuborildi. Ular tez orada smeta takliflarini kiritishadi.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {quotes.map((q) => (
+                    <div
+                      key={q.id}
+                      className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/30 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-fixed flex items-center justify-center font-bold text-primary shrink-0">
+                          {q.provider?.avatar ? (
+                            <Image
+                              src={q.provider.avatar}
+                              alt={q.provider.name}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            q.provider?.name?.charAt(0) || "U"
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-on-surface">{q.provider?.name}</h4>
+                          <p className="text-xs text-on-surface-variant">{q.arrivalTime} • {q.warranty}</p>
+                          {q.notes && (
+                            <p className="text-xs text-on-surface-variant mt-1 italic">&ldquo;{q.notes}&rdquo;</p>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xs text-on-surface-variant font-medium">
-                        {booking.provider?.phone || "+998 90 123 45 67"}
-                      </span>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-0.5 rounded bg-surface-container-high text-xs text-on-surface font-medium">
-                          582 ta muvaffaqiyatli buyurtma
-                        </span>
+
+                      <div className="flex items-center gap-4 self-end sm:self-center">
+                        <div className="text-right">
+                          <span className="text-sm font-black text-on-surface tnum">
+                            {q.totalPrice.toLocaleString()} so‘m
+                          </span>
+                        </div>
+
+                        {q.status === "PENDING" && (
+                          <button
+                            type="button"
+                            onClick={() => handleAcceptQuote(q.id)}
+                            disabled={actionLoading}
+                            className="px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer"
+                          >
+                            Qabul qilish
+                          </button>
+                        )}
+                        {q.status === "ACCEPTED" && (
+                          <span className="text-xs font-bold text-tertiary-container">Qabul qilindi</span>
+                        )}
                       </div>
                     </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-surface-container flex items-center gap-3 w-full sm:w-auto border border-outline-variant/20">
-                    <div className="w-10 h-10 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary shrink-0 shadow-xs">
-                      <Car className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-on-surface-variant uppercase">Avtomobil</span>
-                      <span className="text-xs font-bold text-on-surface">
-                        {booking.vehicle?.model || "Cobalt"} {booking.vehicle?.color || "Oq"}
-                      </span>
-                      <span className="text-xs text-primary font-mono tracking-wider font-extrabold">
-                        {booking.vehicle?.plateNumber || "01 A 777 BA"}
-                      </span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-
-                <div className="pt-3 border-t border-outline-variant/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-on-surface-variant text-xs">
-                    <MapPin className="w-4 h-4 text-secondary shrink-0" />
-                    <span className="line-clamp-1">Manzil: {currentAddress}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsLocationModalOpen(true)}
-                    className="text-xs text-primary font-bold hover:underline shrink-0 cursor-pointer"
-                  >
-                    Manzilni aniqlashtirish
-                  </button>
-                </div>
-              </div>
-
-              {/* Final agreed sum card */}
-              <div className="p-4 rounded-2xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-outline-variant/20">
-                <div className="flex flex-col">
-                  <span className="text-[11px] text-on-surface-variant uppercase font-bold">
-                    Kelishilgan yakuniy summa
-                  </span>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-black text-primary tnum">
-                      {Number(booking.totalPrice).toLocaleString()}
-                    </span>
-                    <span className="text-sm font-semibold text-on-surface">so‘m</span>
-                  </div>
-                  <span className="text-xs text-on-surface-variant mt-0.5">
-                    To‘lov xizmat tugagach naqd, Click yoki Payme orqali amalga oshiriladi.
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-tertiary text-xs font-bold bg-tertiary-fixed/30 px-3 py-1.5 rounded-lg shrink-0">
-                  <ShieldCheck className="w-4 h-4 text-tertiary-container" />
-                  <span>Kafolatlangan smeta</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right column: Route Map & Call / Chat Actions */}
-            <div className="lg:col-span-5 flex flex-col justify-between gap-4">
-              <div className="w-full h-44 rounded-2xl overflow-hidden relative shadow-inner bg-surface-container border border-outline-variant/30 bg-gradient-to-tr from-surface-container to-surface-container-high flex items-end p-3">
-                <div className="relative z-10 bg-surface/95 backdrop-blur-md px-3 py-1.5 rounded-xl text-on-surface text-xs font-semibold flex items-center gap-1.5 shadow-sm border border-outline-variant/30">
-                  <Navigation className="w-4 h-4 text-primary" />
-                  <span>{booking.provider?.name || "Usta"} tirbandliksiz kelmoqda ({booking.distanceKm} km)</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2.5">
-                <a
-                  href={`tel:${(booking.provider?.phone || "+998712000000").replace(/[^0-9+]/g, "")}`}
-                  className="h-12 w-full rounded-xl bg-primary hover:bg-primary-container text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99]"
-                >
-                  <Phone className="w-4 h-4" />
-                  <span>Ustaga qo‘ng‘iroq qilish</span>
-                </a>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    href="/xabarlar"
-                    className="h-11 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <span>Chatda yozish</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setIsCancelModalOpen(true)}
-                    className="h-11 rounded-xl bg-error-container/40 hover:bg-error-container text-error text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>Bekor qilish</span>
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        </section>
-
-        {/* 4. THREE ASSURANCE BADGES */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-5 rounded-2xl bg-surface-container-low flex items-start gap-4 border border-outline-variant/20">
-            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest text-secondary flex items-center justify-center shrink-0 shadow-xs">
-              <Handshake className="w-5 h-5 text-secondary" />
-            </div>
-            <div className="flex flex-col">
-              <h4 className="text-sm font-bold text-on-surface">To‘g‘ridan-to‘g‘ri hisob-kitob</h4>
-              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                Xizmat ko‘rsatilgunga qadar usta qo‘shimcha to‘lov talab qilishga haqli emas.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-surface-container-low flex items-start gap-4 border border-outline-variant/20">
-            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest text-primary flex items-center justify-center shrink-0 shadow-xs">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex flex-col">
-              <h4 className="text-sm font-bold text-on-surface">6 oylik rasmiy kafolat</h4>
-              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                Ish yakunlangach, buyurtma kodi asosida bepul qayta tuzatish kafolati yoqiladi.
-              </p>
-            </div>
-          </div>
-
-          <div className="p-5 rounded-2xl bg-surface-container-low flex items-start gap-4 border border-outline-variant/20">
-            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest text-tertiary flex items-center justify-center shrink-0 shadow-xs">
-              <Headphones className="w-5 h-5 text-tertiary-container" />
-            </div>
-            <div className="flex flex-col">
-              <h4 className="text-sm font-bold text-on-surface">24/7 Qo‘llab-quvvatlash</h4>
-              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                Har qanday tushunmovchilik yuz berganda qo‘llab-quvvatlash operatoriga murojaat qiling.
-              </p>
-            </div>
-          </div>
-        </section>
+        )}
       </div>
 
-      {/* Floating Notification Toast */}
-      {toastNotice && (
-        <div className="fixed top-24 right-4 z-50 max-w-sm bg-surface-container-lowest border border-outline-variant/40 shadow-xl rounded-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-          <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-          <div className="flex-1 text-xs text-on-surface font-medium leading-relaxed">
-            {toastNotice}
+      {/* Review Modal */}
+      {isReviewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-2xl border border-outline-variant/30 flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/20 flex items-center justify-between bg-surface-container-low">
+              <h3 className="text-base font-bold text-on-surface">Xizmatni baholash</h3>
+              <button
+                type="button"
+                onClick={() => setIsReviewOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-2 text-center">
+                  Bahoingizni tanlang
+                </label>
+                <div className="flex items-center justify-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      className="p-1.5 cursor-pointer transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`w-7 h-7 ${
+                          star <= reviewRating
+                            ? "fill-secondary-container text-secondary-container"
+                            : "text-outline-variant"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-center text-xs font-bold text-on-surface mt-1">
+                  {reviewRating === 5
+                    ? "A’lo darajada"
+                    : reviewRating === 4
+                    ? "Yaxshi"
+                    : reviewRating === 3
+                    ? "Qoniqarli"
+                    : reviewRating === 2
+                    ? "Yomon"
+                    : "Juda yomon"}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5">
+                  Sharh matni <span className="text-error">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Usta bajargan ish, sifat va muomala haqida fikringizni yozing..."
+                  className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl p-3 text-xs sm:text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewOpen(false)}
+                  className="px-4 py-2 border border-outline-variant/40 hover:bg-surface-container text-on-surface text-xs font-semibold rounded-xl"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview || !reviewComment.trim()}
+                  className="px-5 py-2 bg-primary hover:bg-primary-container text-on-primary text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmittingReview && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Sharhni saqlash</span>
+                </button>
+              </div>
+            </form>
           </div>
-          <button
-            type="button"
-            onClick={() => setToastNotice(null)}
-            className="text-on-surface-variant hover:text-on-surface cursor-pointer p-0.5"
-          >
-            <span className="text-base font-bold">×</span>
-          </button>
         </div>
       )}
-
-      {/* Interactive Dialogs */}
-      <CancelModal
-        isOpen={isCancelModalOpen}
-        onClose={() => setIsCancelModalOpen(false)}
-        onConfirm={handleCancelConfirm}
-        providerName={booking.provider?.name || "Usta"}
-        minutesLeft={booking.estimatedMinutesLeft || 15}
-      />
-
-      <LocationModal
-        isOpen={isLocationModalOpen}
-        onClose={() => setIsLocationModalOpen(false)}
-        onSave={handleLocationSave}
-        currentAddress={currentAddress}
-      />
     </div>
   );
 }

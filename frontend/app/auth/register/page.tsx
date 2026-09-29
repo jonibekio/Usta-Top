@@ -60,7 +60,8 @@ export default function RegisterPage() {
     setIsLoading(true);
     setRegisterError(null);
     try {
-      const cleanPhone = data.phone.startsWith("+998") ? data.phone : `+998${data.phone.replace(/^998/, "")}`;
+      const digits = data.phone.replace(/\D/g, "");
+      const cleanPhone = digits.startsWith("998") ? `+${digits}` : `+998${digits}`;
       await registerUser(data.name, cleanPhone, data.password, selectedRole);
       if (selectedRole === "PROVIDER") {
         router.push("/provider/dashboard");
@@ -132,7 +133,7 @@ export default function RegisterPage() {
               <User className="w-4 h-4 text-outline shrink-0" />
               <input
                 type="text"
-                placeholder="Masalan: Sardor Aliyev"
+                placeholder="Ismingizni kiriting"
                 {...register("name")}
                 className="flex-1 text-sm outline-none bg-transparent"
               />

@@ -13,6 +13,65 @@ class ConversationListView(APIView):
         serializer = ConversationSerializer(convs, many=True, context={"request": request})
         return standard_response(data=serializer.data)
 
+    def post(self, request):
+        provider_id = request.data.get("providerId") or request.data.get("provider_id")
+        booking_id = request.data.get("bookingId") or request.data.get("booking_id")
+        request_id = request.data.get("requestId") or request.data.get("request_id")
+        text = request.data.get("initialMessage", "").strip()
+
+        from apps.providers.models import ProviderProfile
+        from apps.bookings.models import Booking
+        from apps.service_requests.models import ServiceRequest
+        from .services import get_or_create_conversation
+
+        provider_user = None
+        if provider_id:
+            try:
+                p = ProviderProfile.objects.get(id=provider_id)
+                provider_user = p.user
+            except Exception:
+                try:
+                    p = ProviderProfile.objects.get(slug=provider_id)
+                    provider_user = p.user
+                except Exception:
+                    pass
+
+        booking_obj = None
+        if booking_id:
+            booking_obj = Booking.objects.filter(id=booking_id).first()
+            if booking_obj and not provider_user:
+                provider_user = booking_obj.provider.user
+
+        req_obj = None
+        if request_id:
+            req_obj = ServiceRequest.objects.filter(id=request_id).first()
+
+        if not provider_user:
+            return standard_response(
+                message="Muloqot boshlash uchun usta ko‘rsatilmadi",
+                success=False,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        conv = get_or_create_conversation(
+            request_obj=req_obj,
+            customer=request.user,
+            provider_user=provider_user,
+            booking=booking_obj,
+        )
+
+        if text:
+            from .models import Message
+            Message.objects.create(
+                conversation=conv,
+                sender=request.user,
+                text=text,
+                message_type=Message.MessageType.TEXT,
+            )
+
+        serializer = ConversationSerializer(conv, context={"request": request})
+        return standard_response(data=serializer.data, status_code=status.HTTP_201_CREATED)
+
 class ConversationMessagesView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

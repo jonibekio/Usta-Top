@@ -156,6 +156,8 @@ export interface BookingTimelineStep {
   current: boolean;
 }
 
+export type ProviderService = ProviderServiceItem;
+
 export interface Booking {
   id: string;
   orderNumber: string; // #UT-8942
@@ -177,6 +179,9 @@ export interface Booking {
     color: string;
     plateNumber: string;
   };
+  vehicleModel?: string;
+  vehiclePlate?: string;
+  problemDescription?: string;
   destinationAddress: string;
   distanceKm: number;
   timeline: BookingTimelineStep[];

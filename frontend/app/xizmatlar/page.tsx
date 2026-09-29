@@ -16,17 +16,19 @@ import {
 } from "lucide-react";
 import { getCategories } from "@/lib/api/categories";
 import { ServiceCategory } from "@/types";
-import { MOCK_CATEGORIES } from "@/lib/mock-data/categories";
 
 export default function ServicesPage() {
   const [search, setSearch] = useState("");
-  const [categories, setCategories] = useState<ServiceCategory[]>(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
     getCategories()
       .then((data) => {
         if (data && data.length > 0) setCategories(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load categories:", err);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -91,16 +93,18 @@ export default function ServicesPage() {
             {filteredCategories.map((cat) => (
               <Link
                 key={cat.id}
-                href={`/qidiruv?category=${cat.slug}`}
+                href={`/ustalar?category=${cat.slug}`}
                 className="group bg-surface-container-lowest p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-56 border border-outline-variant/30 relative overflow-hidden"
               >
                 <div className="flex items-start justify-between">
                   <div className="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
                     {categoryIcons[cat.slug] || <Wrench className="w-7 h-7" />}
                   </div>
-                  <span className="text-xs text-tertiary-container bg-tertiary-fixed/30 px-3 py-1 rounded-full font-semibold">
-                    {cat.mastersCount}+ usta
-                  </span>
+                  {typeof cat.mastersCount === "number" && cat.mastersCount > 0 && (
+                    <span className="text-xs text-primary bg-primary/10 px-3 py-1 rounded-full font-semibold">
+                      {cat.mastersCount} mutaxassis
+                    </span>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-on-surface group-hover:text-primary transition-colors flex items-center justify-between">
